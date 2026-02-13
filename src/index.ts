@@ -75,13 +75,14 @@ export type { ILifecycleRule, ICorsRule, IObjectStorageConfig, IObjectStorage } 
 export type { QueueEngine, QueueMode, QueueType, IQueueConfig, IQueue } from "./queue";
 
 // Platform
-export type {
-  DnsProvider,
-  IPlatformComponentConfig,
-  IExternalDnsConfig,
-  IVaultConfig,
-  IPlatformStackConfig,
-  IPlatformStack,
+export {
+  type DnsProvider,
+  type IPlatformComponentConfig,
+  type IExternalDnsConfig,
+  type IVaultConfig,
+  type IPlatformStackConfig,
+  type IPlatformStack,
+  createPlatformStack,
 } from "./platform";
 
 // Global Load Balancer

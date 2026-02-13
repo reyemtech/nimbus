@@ -12,3 +12,5 @@ export type {
   IPlatformStackConfig,
   IPlatformStack,
 } from "./interfaces";
+
+export { createPlatformStack } from "./stack";
