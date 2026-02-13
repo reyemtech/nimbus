@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/reyemtech/nimbus/compare/v1.1.0...v1.1.1) (2026-02-13)
+
+
+### Bug Fixes
+
+* Use es2020 target in scaffolded tsconfig for Pulumi compatibility ([21f230c](https://github.com/reyemtech/nimbus/commit/21f230c75b876b3cdaf1fcc6646fef9b3ae4dc01))
+
 # [1.1.0](https://github.com/reyemtech/nimbus/compare/v1.0.0...v1.1.0) (2026-02-13)
 
 
