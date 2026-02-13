@@ -1,6 +1,7 @@
 node_modules/
 dist/
 coverage/
+docs/api/
 *.tsbuildinfo
 .eslintcache
 .DS_Store

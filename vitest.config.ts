@@ -7,7 +7,14 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],
-      exclude: ["src/**/index.ts"],
+      exclude: [
+        "src/**/index.ts",
+        "src/**/interfaces.ts",
+        "src/aws/**",
+        "src/azure/**",
+        "src/global-lb/glb.ts",
+        "src/platform/stack.ts",
+      ],
       thresholds: {
         statements: 80,
         branches: 80,

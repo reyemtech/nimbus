@@ -1,0 +1,13 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "out": "docs/api",
+  "name": "@reyemtech/pulumi-any-cloud",
+  "readme": "README.md",
+  "excludeExternals": true,
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "includeVersion": true,
+  "tsconfig": "tsconfig.json",
+  "gitRevision": "main"
+}
