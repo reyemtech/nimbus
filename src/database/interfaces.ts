@@ -1,0 +1,106 @@
+/**
+ * Database interfaces for @reyemtech/pulumi-any-cloud.
+ *
+ * Abstracts database provisioning — managed services (RDS/Aurora,
+ * Azure Database, Cloud SQL) or Kubernetes operators (PXC, CloudNativePG,
+ * MariaDB Operator, MongoDB Operator).
+ *
+ * @module database/interfaces
+ */
+
+import * as pulumi from "@pulumi/pulumi";
+import type { CloudArg, ResolvedCloudTarget } from "../types";
+import type { ISecretRef } from "../secrets";
+
+/** Supported database engines. */
+export type DatabaseEngine = "mysql" | "mariadb" | "postgresql" | "mongodb";
+
+/** Database deployment mode. */
+export type DatabaseMode =
+  | "managed"  // Cloud-native managed service (RDS, Azure Database, Cloud SQL)
+  | "operator"; // In-cluster Kubernetes operator (PXC, CNPG, MariaDB Op)
+
+/** Available database operators for in-cluster mode. */
+export type DatabaseOperator =
+  | "pxc"              // Percona XtraDB Cluster (used by ReyemTech)
+  | "mariadb-operator" // MariaDB Operator (used by DoNotCarry)
+  | "cloudnative-pg"   // CloudNativePG for PostgreSQL
+  | "mongodb-operator"; // MongoDB Community/Enterprise Operator
+
+/** Database backup configuration. */
+export interface IDatabaseBackupConfig {
+  readonly enabled: boolean;
+  /** Cron schedule (e.g., "0 3 * * *" for daily at 03:00 UTC). */
+  readonly schedule?: string;
+  readonly retentionDays?: number;
+  /** Backup destination (S3 bucket, Azure Blob container, etc.). */
+  readonly storageTarget?: string;
+  /** Enable point-in-time recovery (PXC: binlog collector, RDS: native PITR). */
+  readonly pitr?: boolean;
+  /** PITR upload interval in seconds (PXC-specific). Default: 300. */
+  readonly pitrIntervalSeconds?: number;
+}
+
+/**
+ * Database configuration input.
+ *
+ * @example
+ * ```typescript
+ * // Managed Aurora MySQL (DoNotCarry pattern)
+ * const config: IDatabaseConfig = {
+ *   cloud: "aws",
+ *   engine: "mysql",
+ *   mode: "managed",
+ *   instanceClass: "db.t3.medium",
+ *   replicas: 2,
+ *   highAvailability: true,
+ * };
+ *
+ * // PXC Operator (ReyemTech pattern)
+ * const config: IDatabaseConfig = {
+ *   cloud: "aws",
+ *   engine: "mysql",
+ *   mode: "operator",
+ *   operator: "pxc",
+ *   replicas: 3,
+ *   storageGb: 10,
+ *   backup: { enabled: true, schedule: "0 3 * * *", retentionDays: 7, pitr: true },
+ * };
+ * ```
+ */
+export interface IDatabaseConfig {
+  readonly cloud: CloudArg;
+  readonly engine: DatabaseEngine;
+  readonly mode: DatabaseMode;
+  /** Required when mode is "operator". */
+  readonly operator?: DatabaseOperator;
+  readonly version?: string;
+  /** Instance class for managed databases (e.g., "db.t3.medium"). */
+  readonly instanceClass?: string;
+  /** Number of replicas. Default: 1 (managed), 3 (operator). */
+  readonly replicas?: number;
+  /** Storage size in GB. */
+  readonly storageGb?: number;
+  readonly highAvailability?: boolean;
+  readonly backup?: IDatabaseBackupConfig;
+  readonly tags?: Readonly<Record<string, string>>;
+}
+
+/**
+ * Database output — the created database resource.
+ *
+ * Provides a unified connection interface regardless of deployment mode.
+ */
+export interface IDatabase {
+  readonly name: string;
+  readonly cloud: ResolvedCloudTarget;
+  readonly engine: DatabaseEngine;
+  readonly mode: DatabaseMode;
+  readonly endpoint: pulumi.Output<string>;
+  readonly port: pulumi.Output<number>;
+  /** Reference to database credentials in the secrets backend. */
+  readonly secretRef: ISecretRef;
+
+  /** Escape hatch: cloud-native or operator CRD resource. */
+  readonly nativeResource: pulumi.Resource;
+}
