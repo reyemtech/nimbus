@@ -23,7 +23,8 @@ import {
   generatePackageJson,
   PROJECT_TSCONFIG,
 } from "./cli/templates.js";
-import type { TemplateName } from "./cli/templates.js";
+import type { TemplateName, ITemplateOptions } from "./cli/templates.js";
+import { requiresAzurePrompts, promptForAzureOptions } from "./cli/azure-prompts.js";
 
 const PROVIDER_PACKAGES: Readonly<Record<string, ReadonlyArray<string>>> = {
   aws: ["@pulumi/aws"],
@@ -105,11 +106,12 @@ function run(cmd: string, cwd: string): void {
  * Scaffold a new project from a template.
  *
  * Generates Pulumi.yaml, package.json, tsconfig.json, index.ts, and README.md,
- * then runs npm install to set up dependencies.
+ * then runs npm install to set up dependencies. For Azure templates, prompts
+ * for region, resource group, and tenant ID, then configures Pulumi stack.
  *
  * @param args - CLI arguments after "new" (name, template)
  */
-function newProject(args: string[]): void {
+async function newProject(args: string[]): Promise<void> {
   const name = args[0];
   const templateArg = args[1];
 
@@ -140,6 +142,13 @@ function newProject(args: string[]): void {
     process.exit(1);
   }
 
+  // Prompt for Azure options if this template needs them
+  let templateOptions: ITemplateOptions | undefined;
+  if (requiresAzurePrompts(template)) {
+    const azureOptions = await promptForAzureOptions(name, template);
+    templateOptions = { azure: azureOptions };
+  }
+
   console.log(`\nScaffolding "${name}" from template "${template}"...\n`);
 
   // 1. Create project directory and files
@@ -148,7 +157,7 @@ function newProject(args: string[]): void {
   writeFileSync(join(dir, "package.json"), generatePackageJson(name));
   writeFileSync(join(dir, "tsconfig.json"), PROJECT_TSCONFIG);
 
-  const files = templateInfo.generate(name);
+  const files = templateInfo.generate(name, templateOptions);
   writeFileSync(join(dir, "index.ts"), files.indexTs);
   writeFileSync(join(dir, "README.md"), files.readmeMd);
 
@@ -159,6 +168,20 @@ function newProject(args: string[]): void {
     const detail = error instanceof Error ? error.message : String(error);
     console.error(`\nFailed to install dependencies: ${detail}`);
     process.exit(1);
+  }
+
+  // 3. Configure Pulumi stack for Azure templates
+  if (templateOptions?.azure) {
+    const region = templateOptions.azure.region;
+    try {
+      run("pulumi stack init dev", dir);
+      run(`pulumi config set azure-native:location ${region}`, dir);
+    } catch {
+      console.log(`\nNote: Could not configure Pulumi stack automatically.`);
+      console.log(`Run these commands manually in your project directory:`);
+      console.log(`  pulumi stack init dev`);
+      console.log(`  pulumi config set azure-native:location ${region}`);
+    }
   }
 
   console.log(`\nDone! Project "${name}" is ready.\n`);
@@ -172,7 +195,7 @@ async function main(): Promise<void> {
 
   switch (command) {
     case "new":
-      newProject(args.slice(1));
+      await newProject(args.slice(1));
       break;
     case "install":
       install(args.slice(1));
