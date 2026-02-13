@@ -9,6 +9,9 @@ import type * as pulumi from "@pulumi/pulumi";
 import type { IDns, IDnsConfig, IDnsRecord } from "../dns";
 import { resolveCloudTarget } from "../types";
 
+/** Default DNS record TTL in seconds. */
+const DEFAULT_DNS_TTL_SECONDS = 300;
+
 /** Azure-specific DNS options. */
 export interface IAzureDnsOptions {
   /** Resource group name. Required for Azure. */
@@ -71,7 +74,7 @@ function createRecord(
 ): void {
   const recordName = record.name === "@" ? "@" : record.name;
   const resourceName = `${name}-${record.name || "root"}-${record.type.toLowerCase()}`;
-  const ttl = record.ttl ?? 300;
+  const ttl = record.ttl ?? DEFAULT_DNS_TTL_SECONDS;
 
   switch (record.type) {
     case "A":

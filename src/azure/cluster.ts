@@ -14,6 +14,21 @@ import type { ICluster, IClusterConfig } from "../cluster";
 import type { INetwork } from "../network";
 import { resolveCloudTarget } from "../types";
 
+/** Maximum length for AKS node pool names. */
+const AKS_POOL_NAME_MAX_LENGTH = 12;
+
+/** Default OS disk size in GB for AKS nodes. */
+const AKS_DEFAULT_OS_DISK_SIZE_GB = 128;
+
+/** Spot instance max price: -1 means "up to the on-demand price". */
+const SPOT_MAX_PRICE_ON_DEMAND = -1;
+
+/** Default AKS service CIDR for Kubernetes service IPs. */
+const AKS_SERVICE_CIDR = "10.240.0.0/16";
+
+/** Default DNS service IP within the AKS service CIDR. */
+const AKS_DNS_SERVICE_IP = "10.240.0.10";
+
 /** Azure-specific AKS options beyond the base config. */
 export interface IAksOptions {
   /** Resource group name. Required for Azure. */
@@ -62,7 +77,7 @@ export function createAksCluster(
 
   // Build agent pool profiles from node pool config
   const agentPoolProfiles = config.nodePools.map((np) => ({
-    name: np.name.substring(0, 12), // AKS pool names max 12 chars
+    name: np.name.substring(0, AKS_POOL_NAME_MAX_LENGTH),
     vmSize: np.instanceType,
     count: np.desiredNodes ?? np.minNodes,
     minCount: np.minNodes,
@@ -70,11 +85,11 @@ export function createAksCluster(
     enableAutoScaling: true,
     mode: (np.mode ?? "User") as "System" | "User",
     osType: "Linux" as const,
-    osDiskSizeGB: 128,
+    osDiskSizeGB: AKS_DEFAULT_OS_DISK_SIZE_GB,
     vnetSubnetId: network.privateSubnetIds.apply((ids) => ids[0] ?? ""),
     scaleSetPriority: np.spot ? ("Spot" as const) : ("Regular" as const),
     scaleSetEvictionPolicy: np.spot ? ("Delete" as const) : undefined,
-    spotMaxPrice: np.spot ? -1 : undefined,
+    spotMaxPrice: np.spot ? SPOT_MAX_PRICE_ON_DEMAND : undefined,
     nodeTaints: np.taints?.map((t) => `${t.key}=${t.value}:${t.effect}`) ?? [],
     nodeLabels: np.labels ?? {},
     type: "VirtualMachineScaleSets" as const,
@@ -101,8 +116,8 @@ export function createAksCluster(
     identity: { type: "SystemAssigned" },
     networkProfile: {
       networkPlugin: options.azureCni !== false ? "azure" : "kubenet",
-      serviceCidr: "10.240.0.0/16",
-      dnsServiceIP: "10.240.0.10",
+      serviceCidr: AKS_SERVICE_CIDR,
+      dnsServiceIP: AKS_DNS_SERVICE_IP,
     },
     addonProfiles,
     tags: { ...tags, Name: name },

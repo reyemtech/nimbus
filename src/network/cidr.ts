@@ -24,6 +24,12 @@ interface ParsedCidr {
  * @param cidr - CIDR notation string (e.g., "10.0.0.0/16")
  * @returns Parsed CIDR with start/end addresses
  * @throws {CidrError} If the CIDR string is malformed
+ *
+ * @example
+ * ```typescript
+ * const parsed = parseCidr("10.0.0.0/16");
+ * // { network: 167772160, prefix: 16, size: 65536, start: 167772160, end: 167837695 }
+ * ```
  */
 export function parseCidr(cidr: string): ParsedCidr {
   const match = /^(\d+)\.(\d+)\.(\d+)\.(\d+)\/(\d+)$/.exec(cidr);
@@ -61,6 +67,12 @@ export function parseCidr(cidr: string): ParsedCidr {
  *
  * @param ip - 32-bit unsigned integer IP address
  * @returns Dotted decimal string
+ *
+ * @example
+ * ```typescript
+ * formatIp(167772160); // "10.0.0.0"
+ * formatIp(3232235777); // "192.168.1.1"
+ * ```
  */
 export function formatIp(ip: number): string {
   return `${(ip >>> 24) & 0xff}.${(ip >>> 16) & 0xff}.${(ip >>> 8) & 0xff}.${ip & 0xff}`;
@@ -72,6 +84,13 @@ export function formatIp(ip: number): string {
  * @param a - First CIDR string
  * @param b - Second CIDR string
  * @returns True if ranges overlap
+ * @throws {CidrError} If either CIDR string is malformed
+ *
+ * @example
+ * ```typescript
+ * cidrsOverlap("10.0.0.0/16", "10.0.0.0/24"); // true
+ * cidrsOverlap("10.0.0.0/16", "10.1.0.0/16"); // false
+ * ```
  */
 export function cidrsOverlap(a: string, b: string): boolean {
   const pa = parseCidr(a);
@@ -84,6 +103,13 @@ export function cidrsOverlap(a: string, b: string): boolean {
  *
  * @param cidrs - Array of CIDR strings to check
  * @returns Array of overlapping pairs, empty if no conflicts
+ * @throws {CidrError} If any CIDR string is malformed
+ *
+ * @example
+ * ```typescript
+ * detectOverlaps(["10.0.0.0/16", "10.0.0.0/24", "10.1.0.0/16"]);
+ * // [["10.0.0.0/16", "10.0.0.0/24"]]
+ * ```
  */
 export function detectOverlaps(cidrs: ReadonlyArray<string>): ReadonlyArray<[string, string]> {
   const overlaps: [string, string][] = [];
@@ -106,6 +132,12 @@ export function detectOverlaps(cidrs: ReadonlyArray<string>): ReadonlyArray<[str
  *
  * @param cidrs - Array of CIDR strings
  * @throws {CidrError} If any CIDRs overlap
+ *
+ * @example
+ * ```typescript
+ * validateNoOverlaps(["10.0.0.0/16", "10.1.0.0/16"]); // ok
+ * validateNoOverlaps(["10.0.0.0/16", "10.0.0.0/24"]); // throws CidrError
+ * ```
  */
 export function validateNoOverlaps(cidrs: ReadonlyArray<string>): void {
   const overlaps = detectOverlaps(cidrs);
@@ -127,6 +159,7 @@ export function validateNoOverlaps(cidrs: ReadonlyArray<string>): void {
  * @param count - Number of CIDRs to generate
  * @param options - Base octet and step between CIDRs
  * @returns Array of non-overlapping CIDR strings
+ * @throws {CidrError} If the second octet exceeds 255
  *
  * @example
  * ```typescript
@@ -166,6 +199,7 @@ export function autoOffsetCidrs(
  * @param clouds - Array of cloud names
  * @param explicit - Explicit CIDR assignments (partial or full)
  * @returns Complete CIDR map keyed by cloud name
+ * @throws {CidrError} If explicit CIDRs overlap or auto-generation fails
  *
  * @example
  * ```typescript

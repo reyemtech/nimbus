@@ -9,6 +9,12 @@ import * as pulumi from "@pulumi/pulumi";
 import type { ISecretRef, ISecrets, ISecretsConfig } from "../secrets";
 import { resolveCloudTarget } from "../types";
 
+/** Maximum length for Azure Key Vault names (3-24 chars, alphanumeric + hyphens). */
+const KEY_VAULT_NAME_MAX_LENGTH = 24;
+
+/** Default soft-delete retention period in days for Key Vault. */
+const SOFT_DELETE_RETENTION_DAYS = 90;
+
 /** Azure-specific secrets options. */
 export interface IAzureSecretsOptions {
   /** Resource group name. Required for Azure. */
@@ -50,7 +56,7 @@ export function createAzureSecrets(
   const rgName = options.resourceGroupName;
 
   // Key Vault names must be 3-24 chars, alphanumeric + hyphens
-  const vaultName = name.replace(/[^a-zA-Z0-9-]/g, "-").substring(0, 24);
+  const vaultName = name.replace(/[^a-zA-Z0-9-]/g, "-").substring(0, KEY_VAULT_NAME_MAX_LENGTH);
 
   const accessPolicies: azure.types.input.keyvault.AccessPolicyEntryArgs[] = [];
   if (options.objectId) {
@@ -76,7 +82,7 @@ export function createAzureSecrets(
             : azure.keyvault.SkuName.Standard,
       },
       enableSoftDelete: true,
-      softDeleteRetentionInDays: 90,
+      softDeleteRetentionInDays: SOFT_DELETE_RETENTION_DAYS,
       enableRbacAuthorization: true,
       accessPolicies,
     },

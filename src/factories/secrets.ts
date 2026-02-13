@@ -23,6 +23,7 @@ export type ICreateSecretsConfig = ISecretsConfig & {
  * @param name - Resource name prefix
  * @param config - Secrets configuration with cloud target and optional providerOptions
  * @returns Single ISecrets for a single cloud target, array for multi-cloud
+ * @throws {UnsupportedFeatureError} If the cloud provider is not supported or Azure options are missing
  *
  * @example
  * ```typescript

@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * Nimbus CLI — helper for managing cloud provider dependencies.
+ * Nimbus CLI — helper for managing cloud provider dependencies and scaffolding projects.
  *
  * Usage:
- *   npx @reyemtech/nimbus install aws        → npm install @pulumi/aws
+ *   npx @reyemtech/nimbus new my-infra aws    → scaffold a new project from a template
+ *   npx @reyemtech/nimbus install aws         → npm install @pulumi/aws
  *   npx @reyemtech/nimbus install azure       → npm install @pulumi/azure-native
  *   npx @reyemtech/nimbus install aws azure   → npm install @pulumi/aws @pulumi/azure-native
  *   npx @reyemtech/nimbus check               → reports which providers are installed/missing
@@ -13,6 +14,10 @@
  */
 
 import { execSync } from "child_process";
+import { writeFileSync, existsSync } from "fs";
+import { join } from "path";
+import { TEMPLATE_NAMES, TEMPLATES } from "./cli/templates.js";
+import type { TemplateName } from "./cli/templates.js";
 
 const PROVIDER_PACKAGES: Readonly<Record<string, ReadonlyArray<string>>> = {
   aws: ["@pulumi/aws"],
@@ -47,8 +52,9 @@ function install(providers: string[]): void {
 
   try {
     execSync(cmd, { stdio: "inherit" });
-  } catch {
-    console.error("\nInstallation failed.");
+  } catch (error: unknown) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error(`\nInstallation failed: ${detail}`);
     process.exit(1);
   }
 }
@@ -69,11 +75,105 @@ async function check(): Promise<void> {
   console.log("\nInstall missing providers with: nimbus install <provider>");
 }
 
+/**
+ * Print template list for help output.
+ */
+function printTemplateList(): void {
+  for (const [name, info] of Object.entries(TEMPLATES)) {
+    console.log(`  ${name.padEnd(16)} ${info.description}`);
+  }
+}
+
+/**
+ * Run a shell command inside a directory, streaming output.
+ *
+ * @param cmd - Command to run
+ * @param cwd - Working directory
+ */
+function run(cmd: string, cwd: string): void {
+  console.log(`\n> ${cmd}`);
+  execSync(cmd, { stdio: "inherit", cwd });
+}
+
+/**
+ * Scaffold a new project from a template.
+ *
+ * Runs pulumi new, installs nimbus + provider SDKs, and writes template files.
+ *
+ * @param args - CLI arguments after "new" (name, template)
+ */
+function newProject(args: string[]): void {
+  const name = args[0];
+  const templateArg = args[1];
+
+  if (!name || !templateArg) {
+    console.log("Usage: nimbus new <name> <template>\n");
+    console.log("Templates:");
+    printTemplateList();
+    console.log("\nExamples:");
+    console.log("  nimbus new my-infra aws");
+    console.log("  nimbus new vault-poc minimal-aws");
+    console.log("  nimbus new scratch empty");
+    process.exit(name ? 1 : 0);
+    return;
+  }
+
+  if (!TEMPLATE_NAMES.includes(templateArg as TemplateName)) {
+    console.error(`Unknown template: "${templateArg}"`);
+    console.error(`Available templates: ${TEMPLATE_NAMES.join(", ")}`);
+    process.exit(1);
+  }
+
+  const template = templateArg as TemplateName;
+  const templateInfo = TEMPLATES[template];
+  const dir = join(process.cwd(), name);
+
+  if (existsSync(dir)) {
+    console.error(`Directory already exists: ${dir}`);
+    process.exit(1);
+  }
+
+  // 1. Pulumi init — creates dir, Pulumi.yaml, package.json, tsconfig.json
+  console.log(`\nScaffolding "${name}" from template "${template}"...\n`);
+  try {
+    run(`pulumi new typescript --yes --name ${name} --dir ${name}`, process.cwd());
+  } catch (error: unknown) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error(`\nFailed to run pulumi new: ${detail}`);
+    console.error("Make sure Pulumi CLI is installed: https://www.pulumi.com/docs/install/");
+    process.exit(1);
+  }
+
+  // 2. Install nimbus + provider SDKs
+  const providerPkgs = templateInfo.providers.flatMap((p) => PROVIDER_PACKAGES[p] ?? []);
+  const allPkgs = ["@reyemtech/nimbus", ...providerPkgs];
+
+  try {
+    run(`npm install ${allPkgs.join(" ")}`, dir);
+  } catch (error: unknown) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error(`\nFailed to install dependencies: ${detail}`);
+    process.exit(1);
+  }
+
+  // 3. Write template files (overwrite pulumi's default index.ts)
+  const files = templateInfo.generate(name);
+  writeFileSync(join(dir, "index.ts"), files.indexTs);
+  writeFileSync(join(dir, "README.md"), files.readmeMd);
+
+  console.log(`\nDone! Project "${name}" is ready.\n`);
+  console.log(`  cd ${name}`);
+  console.log(`  pulumi up`);
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const command = args[0];
 
   switch (command) {
+    case "new":
+      newProject(args.slice(1));
+      break;
     case "install":
       install(args.slice(1));
       break;
@@ -83,9 +183,11 @@ async function main(): Promise<void> {
     default:
       console.log("@reyemtech/nimbus CLI\n");
       console.log("Commands:");
+      console.log("  new <name> <template>            Scaffold a new project from a template");
       console.log("  install <provider> [provider...]  Install cloud provider packages");
       console.log("  check                             Check which providers are installed");
       console.log(`\nAvailable providers: ${ALL_PROVIDERS.join(", ")}`);
+      console.log(`Available templates: ${TEMPLATE_NAMES.join(", ")}`);
       if (command && command !== "help" && command !== "--help" && command !== "-h") {
         process.exit(1);
       }

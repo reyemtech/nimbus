@@ -21,12 +21,13 @@ const PROVIDER_PACKAGES: Readonly<Record<string, ReadonlyArray<string>>> = {
 export async function loadProvider<T>(provider: string, modulePath: string): Promise<T> {
   try {
     return (await import(modulePath)) as T;
-  } catch {
+  } catch (cause: unknown) {
     const packages = PROVIDER_PACKAGES[provider] ?? [modulePath];
     throw new Error(
       `Cloud provider "${provider}" requires: ${packages.join(", ")}\n` +
         `Run: npm install ${packages.join(" ")}\n` +
-        `Or:  npx @reyemtech/nimbus install ${provider}`
+        `Or:  npx @reyemtech/nimbus install ${provider}`,
+      { cause }
     );
   }
 }

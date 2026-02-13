@@ -26,6 +26,7 @@ export type ICreateClusterConfig = IClusterConfig & {
  * @param config - Cluster configuration with cloud target and optional providerOptions
  * @param networks - Network(s) to deploy into. For multi-cloud, pass an array matched by provider.
  * @returns Single ICluster for a single cloud target, array for multi-cloud
+ * @throws {UnsupportedFeatureError} If the cloud provider is not supported, Azure options are missing, or no matching network is found
  *
  * @example
  * ```typescript

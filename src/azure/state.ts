@@ -12,6 +12,9 @@ import type * as pulumi from "@pulumi/pulumi";
 import type { IStateBackend, IStateBackendConfig } from "../state";
 import { resolveCloudTarget } from "../types";
 
+/** Max base length for storage account names (leaves room for "state" suffix, total 3-24). */
+const STORAGE_ACCOUNT_NAME_MAX_BASE_LENGTH = 18;
+
 /** Azure-specific state backend options. */
 export interface IAzureStateBackendOptions {
   /** Resource group name. Required for Azure. */
@@ -45,7 +48,9 @@ export function createAzureStateBackend(
   const rgName = options.resourceGroupName;
 
   // Storage account name: lowercase alphanumeric, 3-24 chars
-  const accountNameBase = name.replace(/[^a-z0-9]/g, "").substring(0, 18);
+  const accountNameBase = name
+    .replace(/[^a-z0-9]/g, "")
+    .substring(0, STORAGE_ACCOUNT_NAME_MAX_BASE_LENGTH);
 
   // GRS for geo-replication, LRS otherwise
   const skuName = replication.enabled ? "Standard_GRS" : "Standard_LRS";

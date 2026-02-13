@@ -45,11 +45,13 @@ export interface ISecretRef {
  * ```
  */
 export interface ISecretsConfig {
+  /** Cloud provider target or multi-cloud array. */
   readonly cloud: CloudArg;
   /** Default: "vault" if Vault is in the platform stack, cloud-native otherwise. */
   readonly backend?: SecretBackend;
   /** Vault address (required if backend is "vault"). */
   readonly vaultAddress?: string;
+  /** Resource tags applied to the secret store. */
   readonly tags?: Readonly<Record<string, string>>;
 }
 
@@ -59,8 +61,11 @@ export interface ISecretsConfig {
  * Provides unified put/get operations regardless of backend.
  */
 export interface ISecrets {
+  /** Logical name of the secret store resource. */
   readonly name: string;
+  /** Resolved cloud target this secret store was provisioned on. */
   readonly cloud: ResolvedCloudTarget;
+  /** Active secret backend for this store. */
   readonly backend: SecretBackend;
 
   /**

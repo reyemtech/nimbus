@@ -10,7 +10,13 @@
  */
 
 import type { CloudProvider, ResolvedCloudTarget } from "./cloud-target";
-import { CloudValidationError, UnsupportedFeatureError } from "./errors";
+import { assertNever, CloudValidationError, UnsupportedFeatureError } from "./errors";
+
+/** Maximum resource name length for AWS, Azure, and GCP. */
+const RESOURCE_NAME_MAX_LENGTH = 63;
+
+/** Maximum resource name length for Rackspace. */
+const RACKSPACE_NAME_MAX_LENGTH = 255;
 
 /** Validation result with warnings and errors. */
 export interface IValidationResult {
@@ -122,15 +128,17 @@ export function validateResourceName(name: string, provider: CloudProvider): IVa
 
   switch (provider) {
     case "aws":
-      // AWS names are generally flexible but some have 63-char limits
-      if (name.length > 63) {
-        errors.push(`Resource name "${name}" exceeds AWS 63-character limit.`);
+      if (name.length > RESOURCE_NAME_MAX_LENGTH) {
+        errors.push(
+          `Resource name "${name}" exceeds AWS ${RESOURCE_NAME_MAX_LENGTH}-character limit.`
+        );
       }
       break;
     case "azure":
-      // Azure resource names: 1-63 chars, alphanumeric + hyphens
-      if (name.length > 63) {
-        errors.push(`Resource name "${name}" exceeds Azure 63-character limit.`);
+      if (name.length > RESOURCE_NAME_MAX_LENGTH) {
+        errors.push(
+          `Resource name "${name}" exceeds Azure ${RESOURCE_NAME_MAX_LENGTH}-character limit.`
+        );
       }
       if (/[^a-zA-Z0-9-]/.test(name)) {
         warnings.push(
@@ -139,9 +147,10 @@ export function validateResourceName(name: string, provider: CloudProvider): IVa
       }
       break;
     case "gcp":
-      // GCP: 1-63 chars, lowercase + hyphens, must start with letter
-      if (name.length > 63) {
-        errors.push(`Resource name "${name}" exceeds GCP 63-character limit.`);
+      if (name.length > RESOURCE_NAME_MAX_LENGTH) {
+        errors.push(
+          `Resource name "${name}" exceeds GCP ${RESOURCE_NAME_MAX_LENGTH}-character limit.`
+        );
       }
       if (name !== name.toLowerCase()) {
         warnings.push(`Resource name "${name}" will be lowercased for GCP.`);
@@ -151,10 +160,14 @@ export function validateResourceName(name: string, provider: CloudProvider): IVa
       }
       break;
     case "rackspace":
-      if (name.length > 255) {
-        errors.push(`Resource name "${name}" exceeds Rackspace 255-character limit.`);
+      if (name.length > RACKSPACE_NAME_MAX_LENGTH) {
+        errors.push(
+          `Resource name "${name}" exceeds Rackspace ${RACKSPACE_NAME_MAX_LENGTH}-character limit.`
+        );
       }
       break;
+    default:
+      assertNever(provider);
   }
 
   return { valid: errors.length === 0, errors, warnings };

@@ -25,6 +25,7 @@ export type ICreateNetworkConfig = INetworkConfig & {
  * @param name - Resource name prefix
  * @param config - Network configuration with cloud target and optional providerOptions
  * @returns Single INetwork for a single cloud target, array for multi-cloud
+ * @throws {UnsupportedFeatureError} If the cloud provider is not supported or Azure options are missing
  *
  * @example
  * ```typescript

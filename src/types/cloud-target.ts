@@ -81,6 +81,12 @@ export const CLOUD_PROVIDERS: ReadonlyArray<CloudProvider> = [
  *
  * @param value - Value to check
  * @returns True if value is a valid CloudProvider
+ *
+ * @example
+ * ```typescript
+ * isCloudProvider("aws"); // true
+ * isCloudProvider("digitalocean"); // false
+ * ```
  */
 export function isCloudProvider(value: unknown): value is CloudProvider {
   return typeof value === "string" && CLOUD_PROVIDERS.includes(value as CloudProvider);
@@ -91,6 +97,12 @@ export function isCloudProvider(value: unknown): value is CloudProvider {
  *
  * @param value - Value to check
  * @returns True if value is a CloudTarget
+ *
+ * @example
+ * ```typescript
+ * isCloudTarget({ provider: "aws", region: "us-east-1" }); // true
+ * isCloudTarget("aws"); // false
+ * ```
  */
 export function isCloudTarget(value: unknown): value is CloudTarget {
   return (

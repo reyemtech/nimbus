@@ -29,9 +29,11 @@ export type DatabaseOperator =
 
 /** Database backup configuration. */
 export interface IDatabaseBackupConfig {
+  /** Whether automated backups are enabled. */
   readonly enabled: boolean;
   /** Cron schedule (e.g., "0 3 * * *" for daily at 03:00 UTC). */
   readonly schedule?: string;
+  /** Number of days to retain backups before deletion. */
   readonly retentionDays?: number;
   /** Backup destination (S3 bucket, Azure Blob container, etc.). */
   readonly storageTarget?: string;
@@ -69,11 +71,15 @@ export interface IDatabaseBackupConfig {
  * ```
  */
 export interface IDatabaseConfig {
+  /** Cloud provider target or multi-cloud array. */
   readonly cloud: CloudArg;
+  /** Database engine to provision. */
   readonly engine: DatabaseEngine;
+  /** Deployment mode: managed cloud service or in-cluster operator. */
   readonly mode: DatabaseMode;
   /** Required when mode is "operator". */
   readonly operator?: DatabaseOperator;
+  /** Database engine version (e.g., "8.0", "15"). Uses provider default if omitted. */
   readonly version?: string;
   /** Instance class for managed databases (e.g., "db.t3.medium"). */
   readonly instanceClass?: string;
@@ -81,8 +87,11 @@ export interface IDatabaseConfig {
   readonly replicas?: number;
   /** Storage size in GB. */
   readonly storageGb?: number;
+  /** Enable multi-AZ or multi-node high availability. */
   readonly highAvailability?: boolean;
+  /** Backup configuration for the database. */
   readonly backup?: IDatabaseBackupConfig;
+  /** Resource tags applied to the database and child resources. */
   readonly tags?: Readonly<Record<string, string>>;
 }
 
@@ -92,11 +101,17 @@ export interface IDatabaseConfig {
  * Provides a unified connection interface regardless of deployment mode.
  */
 export interface IDatabase {
+  /** Logical name of the database resource. */
   readonly name: string;
+  /** Resolved cloud target this database was provisioned on. */
   readonly cloud: ResolvedCloudTarget;
+  /** Database engine in use. */
   readonly engine: DatabaseEngine;
+  /** Deployment mode (managed or operator). */
   readonly mode: DatabaseMode;
+  /** Database connection endpoint hostname. */
   readonly endpoint: pulumi.Output<string>;
+  /** Database connection port. */
   readonly port: pulumi.Output<number>;
   /** Reference to database credentials in the secrets backend. */
   readonly secretRef: ISecretRef;

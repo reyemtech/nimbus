@@ -41,19 +41,27 @@ export type QueueType =
  * ```
  */
 export interface IQueueConfig {
+  /** Cloud provider target or multi-cloud array. */
   readonly cloud: CloudArg;
   /** Auto-selected based on cloud if omitted. */
   readonly engine?: QueueEngine;
+  /** Deployment mode: managed cloud service or in-cluster operator. */
   readonly mode?: QueueMode;
+  /** Queue delivery semantics: standard, FIFO, or streaming. */
   readonly queueType?: QueueType;
+  /** Resource tags applied to the queue and child resources. */
   readonly tags?: Readonly<Record<string, string>>;
 }
 
 /** Queue output — the created queue resource. */
 export interface IQueue {
+  /** Logical name of the queue resource. */
   readonly name: string;
+  /** Resolved cloud target this queue was provisioned on. */
   readonly cloud: ResolvedCloudTarget;
+  /** Queue engine in use. */
   readonly engine: QueueEngine;
+  /** Queue endpoint URL or ARN for producing/consuming messages. */
   readonly endpoint: pulumi.Output<string>;
 
   /** Escape hatch: cloud-native or operator queue resource. */

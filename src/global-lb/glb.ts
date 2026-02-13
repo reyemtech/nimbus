@@ -15,6 +15,22 @@ import type {
   IGlobalLoadBalancerConfig,
   IClusterHealthStatus,
 } from "./interfaces";
+import { assertNever } from "../types";
+
+/** Default health check interval in seconds. */
+const DEFAULT_HEALTH_CHECK_INTERVAL_SECONDS = 30;
+
+/** Default health check failure threshold. */
+const DEFAULT_FAILURE_THRESHOLD = 3;
+
+/** Equal weight for active-active routing (each endpoint gets the same weight). */
+const EQUAL_ROUTING_WEIGHT = 100;
+
+/** DNS record TTL in seconds for GLB records. */
+const GLB_DNS_TTL_SECONDS = 60;
+
+/** Geographic continent codes for geo-routing. */
+const GEO_CONTINENTS = ["NA", "EU", "AP", "SA", "AF", "OC"] as const;
 
 /**
  * Create a Global Load Balancer across multiple clusters.
@@ -44,6 +60,8 @@ export function createGlobalLoadBalancer(
     case "azure-traffic-manager":
       // Placeholder for future providers
       return createRoute53Glb(name, config);
+    default:
+      assertNever(config.dnsProvider);
   }
 }
 
@@ -62,8 +80,8 @@ function createRoute53Glb(name: string, config: IGlobalLoadBalancerConfig): IGlo
       type: hc.protocol === "TCP" ? "TCP" : `${hc.protocol}_STR_MATCH`,
       resourcePath: hc.protocol !== "TCP" ? hc.path : undefined,
       port: hc.port,
-      requestInterval: hc.intervalSeconds ?? 30,
-      failureThreshold: hc.unhealthyThreshold ?? 3,
+      requestInterval: hc.intervalSeconds ?? DEFAULT_HEALTH_CHECK_INTERVAL_SECONDS,
+      failureThreshold: hc.unhealthyThreshold ?? DEFAULT_FAILURE_THRESHOLD,
       fqdn: cluster.endpoint.apply((ep) => {
         try {
           return new URL(ep).hostname;
@@ -87,9 +105,9 @@ function createRoute53Glb(name: string, config: IGlobalLoadBalancerConfig): IGlo
           zoneId: zone.zoneId,
           name: config.domain,
           type: "CNAME",
-          ttl: 60,
+          ttl: GLB_DNS_TTL_SECONDS,
           setIdentifier: `${name}-${entry.cluster.name}`,
-          weightedRoutingPolicies: [{ weight: 100 }],
+          weightedRoutingPolicies: [{ weight: EQUAL_ROUTING_WEIGHT }],
           healthCheckId: entry.healthCheck.id,
           records: [
             entry.cluster.endpoint.apply((ep) => {
@@ -111,7 +129,7 @@ function createRoute53Glb(name: string, config: IGlobalLoadBalancerConfig): IGlo
           zoneId: zone.zoneId,
           name: config.domain,
           type: "CNAME",
-          ttl: 60,
+          ttl: GLB_DNS_TTL_SECONDS,
           setIdentifier: `${name}-${entry.cluster.name}`,
           failoverRoutingPolicies: [{ type: i === 0 ? "PRIMARY" : "SECONDARY" }],
           healthCheckId: entry.healthCheck.id,
@@ -130,16 +148,15 @@ function createRoute53Glb(name: string, config: IGlobalLoadBalancerConfig): IGlo
     }
     case "geo": {
       // Geolocation routing — defaults to continent-based
-      const continents = ["NA", "EU", "AP", "SA", "AF", "OC"];
       for (const [i, entry] of healthChecks.entries()) {
         new aws.route53.Record(`${name}-record-${i}`, {
           zoneId: zone.zoneId,
           name: config.domain,
           type: "CNAME",
-          ttl: 60,
+          ttl: GLB_DNS_TTL_SECONDS,
           setIdentifier: `${name}-${entry.cluster.name}`,
           geolocationRoutingPolicies: [
-            i < continents.length ? { continent: continents[i] } : { country: "*" },
+            i < GEO_CONTINENTS.length ? { continent: GEO_CONTINENTS[i] } : { country: "*" },
           ],
           healthCheckId: entry.healthCheck.id,
           records: [
@@ -161,7 +178,7 @@ function createRoute53Glb(name: string, config: IGlobalLoadBalancerConfig): IGlo
             zoneId: zone.zoneId,
             name: config.domain,
             type: "CNAME",
-            ttl: 60,
+            ttl: GLB_DNS_TTL_SECONDS,
             setIdentifier: `${name}-default`,
             geolocationRoutingPolicies: [{ country: "*" }],
             healthCheckId: fallback.healthCheck.id,
@@ -179,6 +196,8 @@ function createRoute53Glb(name: string, config: IGlobalLoadBalancerConfig): IGlo
       }
       break;
     }
+    default:
+      assertNever(config.strategy);
   }
 
   // Health status output

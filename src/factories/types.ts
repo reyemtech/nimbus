@@ -75,6 +75,15 @@ export interface IProviderOptions {
 /**
  * Extract the provider string from a CloudArg for single-target dispatch.
  * For arrays, returns the first element's provider.
+ *
+ * @param cloud - A cloud provider string or CloudTarget object
+ * @returns The cloud provider identifier
+ *
+ * @example
+ * ```typescript
+ * extractProvider("aws"); // "aws"
+ * extractProvider({ provider: "azure", region: "eastus" }); // "azure"
+ * ```
  */
 export function extractProvider(cloud: CloudProvider | CloudTarget): CloudProvider {
   if (typeof cloud === "string") return cloud;
@@ -83,6 +92,15 @@ export function extractProvider(cloud: CloudProvider | CloudTarget): CloudProvid
 
 /**
  * Check if a CloudArg is a multi-cloud array.
+ *
+ * @param cloud - The cloud argument to check
+ * @returns True if the argument is an array of cloud targets
+ *
+ * @example
+ * ```typescript
+ * isMultiCloud("aws"); // false
+ * isMultiCloud(["aws", "azure"]); // true
+ * ```
  */
 export function isMultiCloud(cloud: CloudArg): cloud is ReadonlyArray<CloudProvider | CloudTarget> {
   return Array.isArray(cloud);

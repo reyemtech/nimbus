@@ -43,10 +43,15 @@ export type CacheArchitecture =
  * ```
  */
 export interface ICacheConfig {
+  /** Cloud provider target or multi-cloud array. */
   readonly cloud: CloudArg;
+  /** Cache engine to provision. */
   readonly engine: CacheEngine;
+  /** Deployment mode: managed cloud service or Helm chart. */
   readonly mode?: CacheMode;
+  /** Cache topology: standalone, replication, or cluster. */
   readonly architecture?: CacheArchitecture;
+  /** Number of read replicas. */
   readonly replicas?: number;
   /** Instance class for managed caches. */
   readonly instanceClass?: string;
@@ -54,16 +59,23 @@ export interface ICacheConfig {
   readonly storageGb?: number;
   /** Enable Prometheus metrics exporter. */
   readonly metrics?: boolean;
+  /** Resource tags applied to the cache and child resources. */
   readonly tags?: Readonly<Record<string, string>>;
 }
 
 /** Cache output — the created cache resource. */
 export interface ICache {
+  /** Logical name of the cache resource. */
   readonly name: string;
+  /** Resolved cloud target this cache was provisioned on. */
   readonly cloud: ResolvedCloudTarget;
+  /** Cache engine in use. */
   readonly engine: CacheEngine;
+  /** Cache connection endpoint hostname. */
   readonly endpoint: pulumi.Output<string>;
+  /** Cache connection port. */
   readonly port: pulumi.Output<number>;
+  /** Reference to cache credentials in the secrets backend, if authentication is enabled. */
   readonly secretRef?: ISecretRef;
 
   /** Escape hatch: cloud-native or Helm release resource. */
