@@ -9,6 +9,15 @@ import * as pulumi from "@pulumi/pulumi";
 import type { INetwork, INetworkConfig, NatStrategy } from "../network";
 import { resolveCloudTarget } from "../types";
 
+/** NSG rule priority: allow inbound VNet traffic. */
+const NSG_PRIORITY_ALLOW_VNET = 100;
+
+/** NSG rule priority: allow Azure Load Balancer health probes. */
+const NSG_PRIORITY_ALLOW_LOAD_BALANCER = 200;
+
+/** NSG rule priority: deny all remaining inbound traffic (lowest priority). */
+const NSG_PRIORITY_DENY_ALL = 4096;
+
 /** Azure-specific network options beyond the base config. */
 export interface IAzureNetworkOptions {
   /** Resource group name. Required for Azure. */
@@ -82,7 +91,7 @@ export function createAzureNetwork(
     securityRules: [
       {
         name: "AllowVNetInbound",
-        priority: 100,
+        priority: NSG_PRIORITY_ALLOW_VNET,
         direction: "Inbound",
         access: "Allow",
         protocol: "*",
@@ -93,7 +102,7 @@ export function createAzureNetwork(
       },
       {
         name: "AllowAzureLoadBalancerInbound",
-        priority: 200,
+        priority: NSG_PRIORITY_ALLOW_LOAD_BALANCER,
         direction: "Inbound",
         access: "Allow",
         protocol: "*",
@@ -104,7 +113,7 @@ export function createAzureNetwork(
       },
       {
         name: "DenyAllInbound",
-        priority: 4096,
+        priority: NSG_PRIORITY_DENY_ALL,
         direction: "Inbound",
         access: "Deny",
         protocol: "*",

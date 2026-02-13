@@ -9,6 +9,9 @@ import * as pulumi from "@pulumi/pulumi";
 import type { INetwork, INetworkConfig, NatStrategy } from "../network";
 import { resolveCloudTarget } from "../types";
 
+/** AWS account ID that publishes the fck-nat community AMI. */
+const FCK_NAT_AMI_OWNER = "568608671756";
+
 /** AWS-specific network options beyond the base config. */
 export interface IAwsNetworkOptions {
   /** fck-nat instance type. Default: "t4g.nano". */
@@ -163,7 +166,7 @@ function createFckNat(
 
   const fckNatAmi = aws.ec2.getAmiOutput({
     mostRecent: true,
-    owners: ["568608671756"],
+    owners: [FCK_NAT_AMI_OWNER],
     filters: [
       { name: "name", values: ["fck-nat-al2023-*-arm64-ebs"] },
       { name: "architecture", values: ["arm64"] },

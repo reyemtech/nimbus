@@ -23,6 +23,7 @@ export type ICreateStateBackendConfig = IStateBackendConfig & {
  * @param name - Resource name prefix
  * @param config - State backend configuration with cloud target and optional providerOptions
  * @returns Single IStateBackend for a single cloud target, array for multi-cloud
+ * @throws {UnsupportedFeatureError} If the cloud provider is not supported or Azure options are missing
  *
  * @example
  * ```typescript

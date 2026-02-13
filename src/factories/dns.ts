@@ -23,6 +23,7 @@ export type ICreateDnsConfig = IDnsConfig & {
  * @param name - Resource name prefix
  * @param config - DNS configuration with cloud target and optional providerOptions
  * @returns Single IDns for a single cloud target, array for multi-cloud
+ * @throws {UnsupportedFeatureError} If the cloud provider is not supported or Azure options are missing
  *
  * @example
  * ```typescript

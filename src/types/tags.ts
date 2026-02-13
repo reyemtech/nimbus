@@ -107,6 +107,13 @@ function normalizeGcpLabelValue(value: string): string {
  *
  * @param value - Label string to validate
  * @returns True if the label is valid for GCP
+ *
+ * @example
+ * ```typescript
+ * isValidGcpLabel("environment"); // true
+ * isValidGcpLabel("My-Label"); // false (uppercase)
+ * isValidGcpLabel(""); // false (empty)
+ * ```
  */
 export function isValidGcpLabel(value: string): boolean {
   return value.length > 0 && value.length <= GCP_LABEL_MAX_LENGTH && GCP_LABEL_REGEX.test(value);
@@ -119,6 +126,15 @@ export function isValidGcpLabel(value: string): boolean {
  * @param required - Required tag values
  * @param userTags - User-provided additional tags
  * @returns Merged tag set
+ *
+ * @example
+ * ```typescript
+ * mergeWithRequiredTags(
+ *   { environment: "prod", client: "acme", costCenter: "eng" },
+ *   { team: "platform" }
+ * );
+ * // { team: "platform", environment: "prod", client: "acme", costCenter: "eng", managedBy: "nimbus" }
+ * ```
  */
 export function mergeWithRequiredTags(
   required: Omit<IRequiredTags, "managedBy">,

@@ -9,6 +9,9 @@ import type * as pulumi from "@pulumi/pulumi";
 import type { IDns, IDnsConfig, IDnsRecord } from "../dns";
 import { resolveCloudTarget } from "../types";
 
+/** Default DNS record TTL in seconds. */
+const DEFAULT_DNS_TTL_SECONDS = 300;
+
 /**
  * Create a Route 53 hosted zone with optional initial records.
  *
@@ -66,7 +69,7 @@ function createRecord(
     zoneId: zone.zoneId,
     name: zone.name.apply((zoneName) => `${fqdn}${zoneName}`),
     type: record.type,
-    ttl: record.ttl ?? 300,
+    ttl: record.ttl ?? DEFAULT_DNS_TTL_SECONDS,
     records: [...record.values],
   });
 }

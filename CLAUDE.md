@@ -82,3 +82,52 @@ GitHub Actions runs: lint → format:check → typecheck → test:coverage → b
 ## Branching
 
 Feature branches follow `feature/REY-<number>-<description>`. Always branch off main, PR back to main.
+
+## TypeScript Best Practices (MANDATORY)
+
+Follow these strictly across the entire codebase:
+
+### Code Quality
+- **Strict mode always** — `"strict": true` in tsconfig.json, no `any` types (use `unknown` + type guards instead)
+- **Explicit return types** on all public functions and methods
+- **Interface over type** for object shapes that will be extended or implemented
+- **Readonly by default** — use `readonly` on properties that shouldn't change after construction
+- **Prefer `const` assertions** and `as const` for literal types
+- **No magic numbers/strings** — extract to named constants or enums
+- **Discriminated unions** for variant types (e.g., AWS vs Azure config)
+- **Exhaustive switch/case** — use `never` type to catch missing cases at compile time
+
+### Architecture & Modularity
+- **No file should exceed 500 lines** — split into smaller, focused modules if approaching this limit
+- **Single responsibility** — each file/class/function does one thing well
+- **Barrel exports** — use `index.ts` files to re-export public API from each module directory
+- **Dependency injection** — pass dependencies explicitly, don't rely on singletons or global state
+- **Composition over inheritance** — prefer composing behaviors via interfaces and factory functions
+- **Pure functions** where possible — deterministic, no side effects, easy to test
+
+### Naming & Organization
+- **Interfaces** prefixed with `I` (e.g., `ICluster`, `INetwork`)
+- **Types** in PascalCase (e.g., `CloudTarget`, `ClusterConfig`)
+- **Functions** in camelCase (e.g., `createCluster`, `validateCidr`)
+- **Constants** in UPPER_SNAKE_CASE (e.g., `DEFAULT_REGIONS`, `MAX_RETRY_COUNT`)
+- **Files** in kebab-case (e.g., `eks-cluster.ts`, `azure-network.ts`)
+- **One class per file**, named the same as the class (e.g., `EksCluster` → `eks-cluster.ts`)
+- **Group by feature**, not by type (e.g., `src/cluster/aws/eks-cluster.ts`, not `src/classes/eks-cluster.ts`)
+
+### Error Handling
+- **Custom error classes** extending `Error` for domain-specific errors (e.g., `CloudValidationError`, `CidrOverlapError`)
+- **Fail fast** — validate inputs at the boundary, throw early with clear messages
+- **No swallowed errors** — always handle or propagate, never empty `catch {}`
+- **Result types** for operations that can fail expectedly (not exceptions for control flow)
+
+### Testing
+- **Test file mirrors source** — `src/cluster/aws/eks-cluster.ts` → `tests/unit/cluster/aws/eks-cluster.test.ts`
+- **Arrange-Act-Assert** pattern in every test
+- **Mock at boundaries** — mock cloud API calls, not internal logic
+- **Test edge cases** — empty arrays, undefined optionals, invalid inputs, multi-cloud arrays with one element
+
+### Documentation
+- **TypeDoc on every public export** — interfaces, classes, functions, types, constants
+- **@example blocks** in TypeDoc for complex APIs
+- **@throws** tags documenting which errors a function can throw
+- **README per feature directory** — `src/cluster/README.md`, `src/platform/README.md`, etc.

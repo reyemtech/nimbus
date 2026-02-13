@@ -18,6 +18,10 @@ import type {
   IPlatformStackConfig,
   IVaultConfig,
 } from "./interfaces";
+import { assertNever } from "../types";
+
+/** Number of Vault replicas in HA mode (Raft consensus requires odd count). */
+const VAULT_HA_REPLICAS = 3;
 
 /** Default Helm chart versions — pinned for reproducibility. */
 const DEFAULT_VERSIONS = {
@@ -190,6 +194,8 @@ function deployExternalDns(
     case "cloudflare":
       providerValues["provider"] = { name: "cloudflare" };
       break;
+    default:
+      assertNever(config.dnsProvider);
   }
 
   return new k8s.helm.v3.Release(
@@ -255,7 +261,7 @@ function deployVault(
     ha: ha
       ? {
           enabled: true,
-          replicas: 3,
+          replicas: VAULT_HA_REPLICAS,
           raft: { enabled: true },
         }
       : { enabled: false },

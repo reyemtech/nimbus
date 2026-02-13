@@ -26,7 +26,7 @@ export interface IPlatformComponentConfig {
   /** Helm chart version override. */
   readonly version?: string;
   /** Additional Helm values to merge with defaults. */
-  readonly values?: Record<string, unknown>;
+  readonly values?: Readonly<Record<string, unknown>>;
 }
 
 /** External DNS component configuration with provider-specific auth. */
