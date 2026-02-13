@@ -4,9 +4,4 @@
  * @module dns
  */
 
-export type {
-  DnsRecordType,
-  IDnsRecord,
-  IDnsConfig,
-  IDns,
-} from "./interfaces";
+export type { DnsRecordType, IDnsRecord, IDnsConfig, IDns } from "./interfaces";

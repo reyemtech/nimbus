@@ -109,11 +109,7 @@ function normalizeGcpLabelValue(value: string): string {
  * @returns True if the label is valid for GCP
  */
 export function isValidGcpLabel(value: string): boolean {
-  return (
-    value.length > 0 &&
-    value.length <= GCP_LABEL_MAX_LENGTH &&
-    GCP_LABEL_REGEX.test(value)
-  );
+  return value.length > 0 && value.length <= GCP_LABEL_MAX_LENGTH && GCP_LABEL_REGEX.test(value);
 }
 
 /**

@@ -7,19 +7,19 @@
  * @module global-lb/interfaces
  */
 
-import * as pulumi from "@pulumi/pulumi";
+import type * as pulumi from "@pulumi/pulumi";
 import type { ICluster } from "../cluster";
 
 /** Routing strategy for multi-cluster traffic. */
 export type RoutingStrategy =
-  | "active-active"  // All clusters serve traffic
+  | "active-active" // All clusters serve traffic
   | "active-passive" // Primary cluster, failover to secondary
-  | "geo";           // Route based on client geography
+  | "geo"; // Route based on client geography
 
 /** DNS provider for global load balancing. */
 export type GlbDnsProvider =
-  | "route53"                // AWS Route 53 health-checked routing
-  | "cloudflare"             // Cloudflare Load Balancing
+  | "route53" // AWS Route 53 health-checked routing
+  | "cloudflare" // Cloudflare Load Balancing
   | "azure-traffic-manager"; // Azure Traffic Manager
 
 /** Health check configuration. */

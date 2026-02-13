@@ -7,25 +7,25 @@
  * @module queue/interfaces
  */
 
-import * as pulumi from "@pulumi/pulumi";
+import type * as pulumi from "@pulumi/pulumi";
 import type { CloudArg, ResolvedCloudTarget } from "../types";
 
 /** Supported queue engines. */
 export type QueueEngine =
-  | "sqs"         // AWS SQS
+  | "sqs" // AWS SQS
   | "service-bus" // Azure Service Bus
-  | "pub-sub"     // GCP Pub/Sub
-  | "nats"        // NATS (in-cluster)
-  | "rabbitmq"    // RabbitMQ (in-cluster)
-  | "kafka";      // Kafka/Strimzi (in-cluster)
+  | "pub-sub" // GCP Pub/Sub
+  | "nats" // NATS (in-cluster)
+  | "rabbitmq" // RabbitMQ (in-cluster)
+  | "kafka"; // Kafka/Strimzi (in-cluster)
 
 /** Queue deployment mode. */
 export type QueueMode = "managed" | "operator";
 
 /** Queue type (delivery semantics). */
 export type QueueType =
-  | "standard"  // At-least-once, unordered
-  | "fifo"      // Exactly-once, ordered
+  | "standard" // At-least-once, unordered
+  | "fifo" // Exactly-once, ordered
   | "streaming"; // Log-based (Kafka, NATS JetStream)
 
 /**

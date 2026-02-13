@@ -7,7 +7,7 @@
  * @module storage/interfaces
  */
 
-import * as pulumi from "@pulumi/pulumi";
+import type * as pulumi from "@pulumi/pulumi";
 import type { CloudArg, ResolvedCloudTarget } from "../types";
 
 /** Lifecycle rule for object expiration/transition. */

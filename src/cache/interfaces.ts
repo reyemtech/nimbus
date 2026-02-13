@@ -7,7 +7,7 @@
  * @module cache/interfaces
  */
 
-import * as pulumi from "@pulumi/pulumi";
+import type * as pulumi from "@pulumi/pulumi";
 import type { CloudArg, ResolvedCloudTarget } from "../types";
 import type { ISecretRef } from "../secrets";
 
@@ -17,13 +17,13 @@ export type CacheEngine = "redis" | "memcached" | "valkey";
 /** Cache deployment mode. */
 export type CacheMode =
   | "managed" // Cloud-native (ElastiCache, Azure Cache, Memorystore)
-  | "helm";   // In-cluster via Helm chart (Bitnami Redis)
+  | "helm"; // In-cluster via Helm chart (Bitnami Redis)
 
 /** Cache architecture. */
 export type CacheArchitecture =
-  | "standalone"  // Single node
+  | "standalone" // Single node
   | "replication" // Master + replicas
-  | "cluster";    // Redis Cluster mode (sharded)
+  | "cluster"; // Redis Cluster mode (sharded)
 
 /**
  * Cache configuration input.

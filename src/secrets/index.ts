@@ -4,9 +4,4 @@
  * @module secrets
  */
 
-export type {
-  SecretBackend,
-  ISecretRef,
-  ISecretsConfig,
-  ISecrets,
-} from "./interfaces";
+export type { SecretBackend, ISecretRef, ISecretsConfig, ISecrets } from "./interfaces";

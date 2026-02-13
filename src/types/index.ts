@@ -27,9 +27,4 @@ export {
   assertNever,
 } from "./errors";
 
-export {
-  type IRequiredTags,
-  normalizeTags,
-  isValidGcpLabel,
-  mergeWithRequiredTags,
-} from "./tags";
+export { type IRequiredTags, normalizeTags, isValidGcpLabel, mergeWithRequiredTags } from "./tags";

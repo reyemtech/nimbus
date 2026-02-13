@@ -8,9 +8,9 @@
  * @module cluster/interfaces
  */
 
-import * as pulumi from "@pulumi/pulumi";
-import * as k8s from "@pulumi/kubernetes";
-import type { CloudArg, CloudProvider, ResolvedCloudTarget } from "../types";
+import type * as pulumi from "@pulumi/pulumi";
+import type * as k8s from "@pulumi/kubernetes";
+import type { CloudArg, ResolvedCloudTarget } from "../types";
 
 /** Kubernetes node taint. */
 export interface INodeTaint {

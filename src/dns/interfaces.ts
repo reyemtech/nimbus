@@ -7,19 +7,11 @@
  * @module dns/interfaces
  */
 
-import * as pulumi from "@pulumi/pulumi";
+import type * as pulumi from "@pulumi/pulumi";
 import type { CloudArg, ResolvedCloudTarget } from "../types";
 
 /** Supported DNS record types. */
-export type DnsRecordType =
-  | "A"
-  | "AAAA"
-  | "CNAME"
-  | "TXT"
-  | "MX"
-  | "NS"
-  | "SRV"
-  | "CAA";
+export type DnsRecordType = "A" | "AAAA" | "CNAME" | "TXT" | "MX" | "NS" | "SRV" | "CAA";
 
 /** DNS record configuration. */
 export interface IDnsRecord {

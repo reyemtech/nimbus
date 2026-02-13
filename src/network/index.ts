@@ -4,9 +4,4 @@
  * @module network
  */
 
-export type {
-  NatStrategy,
-  ISubnetConfig,
-  INetworkConfig,
-  INetwork,
-} from "./interfaces";
+export type { NatStrategy, ISubnetConfig, INetworkConfig, INetwork } from "./interfaces";

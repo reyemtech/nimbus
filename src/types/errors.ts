@@ -68,7 +68,11 @@ export class CloudValidationError extends AnyCloudError {
 export class CidrError extends AnyCloudError {
   readonly cidrs?: ReadonlyArray<string>;
 
-  constructor(message: string, code: "CIDR_OVERLAP" | "CIDR_INVALID", cidrs?: ReadonlyArray<string>) {
+  constructor(
+    message: string,
+    code: "CIDR_OVERLAP" | "CIDR_INVALID",
+    cidrs?: ReadonlyArray<string>
+  ) {
     super(message, code);
     this.name = "CidrError";
     this.cidrs = cidrs;
@@ -129,8 +133,5 @@ export class ConfigError extends AnyCloudError {
  * ```
  */
 export function assertNever(value: never): never {
-  throw new UnsupportedFeatureError(
-    `Unhandled value: ${JSON.stringify(value)}`,
-    String(value)
-  );
+  throw new UnsupportedFeatureError(`Unhandled value: ${JSON.stringify(value)}`, String(value));
 }

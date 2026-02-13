@@ -8,16 +8,16 @@
  * @module platform/interfaces
  */
 
-import * as pulumi from "@pulumi/pulumi";
-import * as k8s from "@pulumi/kubernetes";
+import type * as pulumi from "@pulumi/pulumi";
+import type * as k8s from "@pulumi/kubernetes";
 import type { ICluster } from "../cluster";
 
 /** DNS provider for External DNS integration. */
 export type DnsProvider =
-  | "route53"      // AWS Route 53 (ReyemTech + DoNotCarry)
-  | "azure-dns"    // Azure DNS Zone (MetrixGroup)
-  | "cloud-dns"    // GCP Cloud DNS
-  | "cloudflare";  // Cloudflare DNS
+  | "route53" // AWS Route 53 (ReyemTech + DoNotCarry)
+  | "azure-dns" // Azure DNS Zone (MetrixGroup)
+  | "cloud-dns" // GCP Cloud DNS
+  | "cloudflare"; // Cloudflare DNS
 
 /** Individual platform component configuration. */
 export interface IPlatformComponentConfig {

@@ -8,7 +8,7 @@
  * @module database/interfaces
  */
 
-import * as pulumi from "@pulumi/pulumi";
+import type * as pulumi from "@pulumi/pulumi";
 import type { CloudArg, ResolvedCloudTarget } from "../types";
 import type { ISecretRef } from "../secrets";
 
@@ -17,14 +17,14 @@ export type DatabaseEngine = "mysql" | "mariadb" | "postgresql" | "mongodb";
 
 /** Database deployment mode. */
 export type DatabaseMode =
-  | "managed"  // Cloud-native managed service (RDS, Azure Database, Cloud SQL)
+  | "managed" // Cloud-native managed service (RDS, Azure Database, Cloud SQL)
   | "operator"; // In-cluster Kubernetes operator (PXC, CNPG, MariaDB Op)
 
 /** Available database operators for in-cluster mode. */
 export type DatabaseOperator =
-  | "pxc"              // Percona XtraDB Cluster (used by ReyemTech)
+  | "pxc" // Percona XtraDB Cluster (used by ReyemTech)
   | "mariadb-operator" // MariaDB Operator (used by DoNotCarry)
-  | "cloudnative-pg"   // CloudNativePG for PostgreSQL
+  | "cloudnative-pg" // CloudNativePG for PostgreSQL
   | "mongodb-operator"; // MongoDB Community/Enterprise Operator
 
 /** Database backup configuration. */

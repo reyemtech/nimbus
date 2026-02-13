@@ -4,10 +4,4 @@
  * @module cache
  */
 
-export type {
-  CacheEngine,
-  CacheMode,
-  CacheArchitecture,
-  ICacheConfig,
-  ICache,
-} from "./interfaces";
+export type { CacheEngine, CacheMode, CacheArchitecture, ICacheConfig, ICache } from "./interfaces";

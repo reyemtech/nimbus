@@ -49,10 +49,7 @@ export interface CloudTarget {
  * ]
  * ```
  */
-export type CloudArg =
-  | CloudProvider
-  | CloudTarget
-  | ReadonlyArray<CloudProvider | CloudTarget>;
+export type CloudArg = CloudProvider | CloudTarget | ReadonlyArray<CloudProvider | CloudTarget>;
 
 /**
  * Resolved cloud target — always has both provider and region.
@@ -86,10 +83,7 @@ export const CLOUD_PROVIDERS: ReadonlyArray<CloudProvider> = [
  * @returns True if value is a valid CloudProvider
  */
 export function isCloudProvider(value: unknown): value is CloudProvider {
-  return (
-    typeof value === "string" &&
-    CLOUD_PROVIDERS.includes(value as CloudProvider)
-  );
+  return typeof value === "string" && CLOUD_PROVIDERS.includes(value as CloudProvider);
 }
 
 /**
@@ -119,9 +113,7 @@ export function isCloudTarget(value: unknown): value is CloudTarget {
  *
  * @throws {CloudValidationError} If cloud argument is invalid
  */
-export function resolveCloudTarget(
-  cloud: CloudProvider | CloudTarget
-): ResolvedCloudTarget;
+export function resolveCloudTarget(cloud: CloudProvider | CloudTarget): ResolvedCloudTarget;
 export function resolveCloudTarget(
   cloud: ReadonlyArray<CloudProvider | CloudTarget>
 ): ReadonlyArray<ResolvedCloudTarget>;
@@ -134,12 +126,10 @@ export function resolveCloudTarget(
   if (Array.isArray(cloud)) {
     return cloud.map((c) => resolveSingle(c));
   }
-  return resolveSingle(cloud);
+  return resolveSingle(cloud as CloudProvider | CloudTarget);
 }
 
-function resolveSingle(
-  cloud: CloudProvider | CloudTarget
-): ResolvedCloudTarget {
+function resolveSingle(cloud: CloudProvider | CloudTarget): ResolvedCloudTarget {
   if (isCloudProvider(cloud)) {
     return {
       provider: cloud,

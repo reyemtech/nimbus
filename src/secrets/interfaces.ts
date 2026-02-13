@@ -7,14 +7,14 @@
  * @module secrets/interfaces
  */
 
-import * as pulumi from "@pulumi/pulumi";
+import type * as pulumi from "@pulumi/pulumi";
 import type { CloudArg, ResolvedCloudTarget } from "../types";
 
 /** Supported secret backends. */
 export type SecretBackend =
-  | "vault"               // HashiCorp Vault (in-cluster, used by ReyemTech + DoNotCarry)
+  | "vault" // HashiCorp Vault (in-cluster, used by ReyemTech + DoNotCarry)
   | "aws-secrets-manager" // AWS Secrets Manager
-  | "azure-key-vault"     // Azure Key Vault (used by MetrixGroup)
+  | "azure-key-vault" // Azure Key Vault (used by MetrixGroup)
   | "gcp-secret-manager"; // GCP Secret Manager
 
 /** Reference to a secret (path + optional key within the secret). */

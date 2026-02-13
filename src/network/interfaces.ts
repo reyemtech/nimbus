@@ -8,14 +8,14 @@
  * @module network/interfaces
  */
 
-import * as pulumi from "@pulumi/pulumi";
+import type * as pulumi from "@pulumi/pulumi";
 import type { CloudArg, ResolvedCloudTarget } from "../types";
 
 /** NAT gateway strategy. */
 export type NatStrategy =
-  | "managed"  // Cloud-native NAT Gateway (AWS: ~$32/mo, Azure: ~$32/mo)
-  | "fck-nat"  // fck-nat instance on AWS (~$3/mo) — AWS only
-  | "none";    // No NAT (public subnets only or hosted K8s)
+  | "managed" // Cloud-native NAT Gateway (AWS: ~$32/mo, Azure: ~$32/mo)
+  | "fck-nat" // fck-nat instance on AWS (~$3/mo) — AWS only
+  | "none"; // No NAT (public subnets only or hosted K8s)
 
 /** Subnet configuration. */
 export interface ISubnetConfig {

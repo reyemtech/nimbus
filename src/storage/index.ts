@@ -4,9 +4,4 @@
  * @module storage
  */
 
-export type {
-  ILifecycleRule,
-  ICorsRule,
-  IObjectStorageConfig,
-  IObjectStorage,
-} from "./interfaces";
+export type { ILifecycleRule, ICorsRule, IObjectStorageConfig, IObjectStorage } from "./interfaces";

@@ -4,10 +4,4 @@
  * @module queue
  */
 
-export type {
-  QueueEngine,
-  QueueMode,
-  QueueType,
-  IQueueConfig,
-  IQueue,
-} from "./interfaces";
+export type { QueueEngine, QueueMode, QueueType, IQueueConfig, IQueue } from "./interfaces";
