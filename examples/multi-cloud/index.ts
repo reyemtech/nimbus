@@ -22,14 +22,13 @@ import type { INetwork, ICluster, IDns } from "@reyemtech/nimbus";
 
 const resourceGroupName = "rg-prod-canadacentral";
 
-// ── Shared provider options ─────────────────────────────────────────
+// Shared provider options
 const providerOptions = {
   aws: { autoMode: true },
   azure: { resourceGroupName },
 };
 
-// ── Networks ────────────────────────────────────────────────────────
-// Factory auto-offsets CIDRs: AWS gets 10.0.0.0/16, Azure gets 10.1.0.0/16
+// 1. Networks — Auto-offset CIDRs: AWS gets 10.0.0.0/16, Azure gets 10.1.0.0/16
 const networks = createNetwork("prod", {
   cloud: [
     { provider: "aws", region: "us-east-1" },
@@ -40,8 +39,7 @@ const networks = createNetwork("prod", {
   providerOptions,
 }) as INetwork[];
 
-// ── Clusters ────────────────────────────────────────────────────────
-// Networks are auto-matched by provider
+// 2. Clusters — Networks are auto-matched by provider
 const clusters = createCluster(
   "prod",
   {
@@ -65,14 +63,13 @@ const clusters = createCluster(
   networks,
 ) as ICluster[];
 
-// ── DNS ─────────────────────────────────────────────────────────────
+// 3. DNS — Route 53 hosted zone
 const dns = createDns("prod", {
   cloud: "aws",
   zoneName: "example.com",
 }) as IDns;
 
-// ── Platform Stack ──────────────────────────────────────────────────
-// Deploy to both clusters
+// 4. Platform Stack — Deploy to both clusters
 createPlatformStack("prod", {
   cluster: clusters,
   domain: "example.com",
@@ -82,7 +79,7 @@ createPlatformStack("prod", {
   },
 });
 
-// ── Global Load Balancer ────────────────────────────────────────────
+// 5. Global Load Balancer — Active-active across both clouds
 const glb = createGlobalLoadBalancer("prod", {
   strategy: "active-active",
   clusters,
@@ -97,7 +94,7 @@ const glb = createGlobalLoadBalancer("prod", {
   dnsProvider: "route53",
 });
 
-// Exports
+// Stack outputs
 export const awsVpcId = networks[0]?.vpcId;
 export const azureVnetId = networks[1]?.vpcId;
 export const awsEndpoint = clusters[0]?.endpoint;

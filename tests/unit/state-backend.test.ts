@@ -90,12 +90,12 @@ describe("createStateBackend factory", () => {
     expect((result as IStateBackend).backendType).toBe("azblob");
   });
 
-  it("throws for Azure without providerOptions", async () => {
-    await expect(
+  it("throws for Azure without providerOptions", () => {
+    expect(() =>
       createStateBackend("prod", {
         cloud: "azure",
       })
-    ).rejects.toThrow("Azure requires providerOptions.azure.resourceGroupName");
+    ).toThrow("Azure requires providerOptions.azure.resourceGroupName");
   });
 
   it("returns array for multi-cloud", async () => {
@@ -120,12 +120,12 @@ describe("createStateBackend factory", () => {
     expect(vi.mocked(createAzureStateBackend).mock.calls[0]?.[0]).toBe("prod-azure");
   });
 
-  it("throws for unsupported provider", async () => {
-    await expect(
+  it("throws for unsupported provider", () => {
+    expect(() =>
       createStateBackend("prod", {
         cloud: "gcp" as "aws",
       })
-    ).rejects.toThrow("state-backend");
+    ).toThrow("state-backend");
   });
 
   it("passes versioning config through", async () => {

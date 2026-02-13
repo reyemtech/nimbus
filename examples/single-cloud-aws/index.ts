@@ -86,7 +86,7 @@ const platform = createPlatformStack("prod", {
   vault: { enabled: true, ingressHost: "vault.example.com" },
 });
 
-// Exports
+// Stack outputs
 export const vpcId = network.vpcId;
 export const clusterEndpoint = cluster.endpoint;
 export const zoneId = dns.zoneId;

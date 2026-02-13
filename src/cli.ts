@@ -152,12 +152,9 @@ function newProject(args: string[]): void {
   writeFileSync(join(dir, "index.ts"), files.indexTs);
   writeFileSync(join(dir, "README.md"), files.readmeMd);
 
-  // 2. Install nimbus + provider SDKs
-  const providerPkgs = templateInfo.providers.flatMap((p) => PROVIDER_PACKAGES[p] ?? []);
-  const allPkgs = ["@reyemtech/nimbus", ...providerPkgs];
-
+  // 2. Install nimbus (all provider SDKs are bundled as dependencies)
   try {
-    run(`npm install ${allPkgs.join(" ")}`, dir);
+    run("npm install @reyemtech/nimbus", dir);
   } catch (error: unknown) {
     const detail = error instanceof Error ? error.message : String(error);
     console.error(`\nFailed to install dependencies: ${detail}`);

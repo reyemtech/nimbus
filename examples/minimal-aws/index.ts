@@ -35,6 +35,6 @@ secrets.putSecret("database", {
   password: "change-me-in-pulumi-config",
 });
 
-// Exports
+// Stack outputs
 export const backendUrl = backend.backendUrl;
 export const bucketName = backend.bucketName;
