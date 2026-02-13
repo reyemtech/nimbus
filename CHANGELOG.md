@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/reyemtech/nimbus/compare/v1.1.2...v1.2.0) (2026-02-13)
+
+
+### Features
+
+* Add interactive Azure prompts to `nimbus new` ([#14](https://github.com/reyemtech/nimbus/issues/14)) ([82c2c8e](https://github.com/reyemtech/nimbus/commit/82c2c8e461666ab42fe8ebdd89ba523014d44668))
+
 ## [1.1.2](https://github.com/reyemtech/nimbus/compare/v1.1.1...v1.1.2) (2026-02-13)
 
 
