@@ -259,6 +259,62 @@ interface ISecrets {
 - MetrixGroup: Azure Key Vault + Secrets Store CSI Driver
 - Support both patterns: Vault + ESO (default) or cloud-native + CSI
 
+### IStateBackend
+
+Abstracts Pulumi state storage (S3, Azure Blob) with BCDR features: versioning, encryption, replication, and locking.
+
+```typescript
+/** Supported state backend storage types */
+type StateBackendType = "s3" | "azblob" | "gs";
+
+/** Cross-region replication configuration */
+interface IReplicationConfig {
+  readonly enabled: boolean;
+  readonly destinationRegion?: string;
+}
+
+/** State locking configuration */
+interface IStateLockConfig {
+  readonly enabled?: boolean;       // Default: true
+  readonly dynamoDbTableName?: string; // AWS only, auto-generated if not provided
+}
+
+/** State backend configuration input */
+interface IStateBackendConfig {
+  readonly cloud: CloudArg;
+  readonly backendType?: StateBackendType;
+  readonly versioning?: boolean;    // Default: true
+  readonly encryption?: boolean;    // Default: true
+  readonly locking?: IStateLockConfig;
+  readonly replication?: IReplicationConfig;
+  readonly tags?: Readonly<Record<string, string>>;
+}
+
+/** State backend output */
+interface IStateBackend {
+  readonly name: string;
+  readonly cloud: ResolvedCloudTarget;
+  readonly backendType: StateBackendType;
+  /** Backend URL for `pulumi login`. e.g., `s3://bucket-name` or `azblob://container-name`. */
+  readonly backendUrl: pulumi.Output<string>;
+  readonly bucketName: pulumi.Output<string>;
+  /** DynamoDB table name for state locking (AWS only). */
+  readonly lockTableName?: pulumi.Output<string>;
+  /** Storage account name (Azure only). */
+  readonly storageAccountName?: pulumi.Output<string>;
+  readonly versioning: boolean;
+  readonly encryption: boolean;
+  readonly replicationEnabled: boolean;
+
+  /** Escape hatch */
+  readonly nativeResource: pulumi.Resource;
+}
+```
+
+**Implementation notes:**
+- **AWS:** S3 BucketV2 + PublicAccessBlock + BucketVersioningV2 + SSE (AES256 or KMS via `stateKmsKeyArn`) + DynamoDB table (PAY_PER_REQUEST, `LockID` hash key) + optional cross-region replication (replica bucket + IAM role/policy + BucketReplicationConfig)
+- **Azure:** StorageAccount (StorageV2, HTTPS-only, TLS 1.2, no public blob) + BlobContainer ("pulumistate") + BlobServiceProperties with versioning. SKU: `Standard_GRS` if replication enabled, `Standard_LRS` otherwise. Locking uses Azure blob leases natively (no separate table needed).
+
 ### IDatabase
 
 Abstracts database provisioning — managed (RDS, Azure Database) or operator-based (PXC, CloudNativePG).
@@ -554,88 +610,93 @@ interface IGlobalLoadBalancer {
 
 ## Factory Functions
 
-All resources are created via factory functions. Single cloud target returns single resource; array returns array.
+All resources are created via **async** factory functions that use dynamic imports internally — the provider SDK is only loaded when the function is called with that cloud target. Single cloud target returns a single resource wrapped in a Promise; array target returns an array.
+
+Provider-specific options are passed via the `providerOptions` field on the config object (type: `IProviderOptions`).
 
 ```typescript
-/** Create a Kubernetes cluster */
-function createCluster(
-  name: string,
-  config: IClusterConfig & { cloud: CloudProvider | CloudTarget }
-): ICluster;
-function createCluster(
-  name: string,
-  config: IClusterConfig & { cloud: ReadonlyArray<CloudProvider | CloudTarget> }
-): ReadonlyArray<ICluster>;
+/** Provider-specific options */
+interface IProviderOptions {
+  readonly aws?: IAwsProviderOptions;
+  readonly azure?: IAzureProviderOptions;
+}
 
-/** Create a network (VPC/VNet) */
-function createNetwork(
-  name: string,
-  config: INetworkConfig & { cloud: CloudProvider | CloudTarget }
-): INetwork;
-function createNetwork(
-  name: string,
-  config: INetworkConfig & { cloud: ReadonlyArray<CloudProvider | CloudTarget> }
-): ReadonlyArray<INetwork>;
+interface IAwsProviderOptions {
+  readonly fckNatInstanceType?: string;
+  readonly availabilityZoneCount?: number;
+  readonly autoMode?: boolean;
+  readonly addons?: ReadonlyArray<string>;
+  readonly endpointAccess?: "public" | "private" | "both";
+  readonly stateKmsKeyArn?: string;
+  readonly stateForceDestroy?: boolean;
+}
 
-/** Create a DNS zone */
-function createDns(
-  name: string,
-  config: IDnsConfig & { cloud: CloudProvider | CloudTarget }
-): IDns;
-function createDns(
-  name: string,
-  config: IDnsConfig & { cloud: ReadonlyArray<CloudProvider | CloudTarget> }
-): ReadonlyArray<IDns>;
+interface IAzureProviderOptions {
+  readonly resourceGroupName: string;  // Required for all Azure resources
+  readonly subnetCount?: number;
+  readonly azureCni?: boolean;
+  readonly virtualNodes?: boolean;
+  readonly aadTenantId?: string;
+  readonly dnsPrefix?: string;
+  readonly tenantId?: string;
+  readonly objectId?: string;
+  readonly sku?: string;
+}
 
-/** Create a secrets backend */
-function createSecrets(
+/** Create a network (VPC/VNet) — async, dynamic imports */
+async function createNetwork(
   name: string,
-  config: ISecretsConfig & { cloud: CloudProvider | CloudTarget }
-): ISecrets;
-function createSecrets(
-  name: string,
-  config: ISecretsConfig & { cloud: ReadonlyArray<CloudProvider | CloudTarget> }
-): ReadonlyArray<ISecrets>;
+  config: INetworkConfig & { providerOptions?: IProviderOptions }
+): Promise<INetwork | INetwork[]>;
 
-/** Create a database */
-function createDatabase(
+/** Create a Kubernetes cluster — async, dynamic imports */
+async function createCluster(
   name: string,
-  config: IDatabaseConfig & { cloud: CloudProvider | CloudTarget }
-): IDatabase;
-function createDatabase(
-  name: string,
-  config: IDatabaseConfig & { cloud: ReadonlyArray<CloudProvider | CloudTarget> }
-): ReadonlyArray<IDatabase>;
+  config: IClusterConfig & { providerOptions?: IProviderOptions },
+  networks: INetwork | INetwork[]
+): Promise<ICluster | ICluster[]>;
 
-/** Create a cache */
-function createCache(
+/** Create a DNS zone — async, dynamic imports */
+async function createDns(
   name: string,
-  config: ICacheConfig & { cloud: CloudProvider | CloudTarget }
-): ICache;
-function createCache(
-  name: string,
-  config: ICacheConfig & { cloud: ReadonlyArray<CloudProvider | CloudTarget> }
-): ReadonlyArray<ICache>;
+  config: IDnsConfig & { providerOptions?: IProviderOptions }
+): Promise<IDns | IDns[]>;
 
-/** Create an object storage bucket */
-function createObjectStorage(
+/** Create a secrets backend — async, dynamic imports */
+async function createSecrets(
   name: string,
-  config: IObjectStorageConfig & { cloud: CloudProvider | CloudTarget }
-): IObjectStorage;
-function createObjectStorage(
-  name: string,
-  config: IObjectStorageConfig & { cloud: ReadonlyArray<CloudProvider | CloudTarget> }
-): ReadonlyArray<IObjectStorage>;
+  config: ISecretsConfig & { providerOptions?: IProviderOptions }
+): Promise<ISecrets | ISecrets[]>;
 
-/** Create a message queue */
-function createQueue(
+/** Create a state backend (S3/Azure Blob with BCDR) — async, dynamic imports */
+async function createStateBackend(
   name: string,
-  config: IQueueConfig & { cloud: CloudProvider | CloudTarget }
-): IQueue;
-function createQueue(
+  config: IStateBackendConfig & { providerOptions?: IProviderOptions }
+): Promise<IStateBackend | IStateBackend[]>;
+
+/** Create a database (future) */
+async function createDatabase(
   name: string,
-  config: IQueueConfig & { cloud: ReadonlyArray<CloudProvider | CloudTarget> }
-): ReadonlyArray<IQueue>;
+  config: IDatabaseConfig & { providerOptions?: IProviderOptions }
+): Promise<IDatabase | IDatabase[]>;
+
+/** Create a cache (future) */
+async function createCache(
+  name: string,
+  config: ICacheConfig & { providerOptions?: IProviderOptions }
+): Promise<ICache | ICache[]>;
+
+/** Create an object storage bucket (future) */
+async function createObjectStorage(
+  name: string,
+  config: IObjectStorageConfig & { providerOptions?: IProviderOptions }
+): Promise<IObjectStorage | IObjectStorage[]>;
+
+/** Create a message queue (future) */
+async function createQueue(
+  name: string,
+  config: IQueueConfig & { providerOptions?: IProviderOptions }
+): Promise<IQueue | IQueue[]>;
 
 /** Create a platform stack */
 function createPlatformStack(
@@ -649,13 +710,7 @@ function createGlobalLoadBalancer(
   config: IGlobalLoadBalancerConfig
 ): IGlobalLoadBalancer;
 
-/** Create a state backend */
-function createStateBackend(
-  name: string,
-  config: { cloud: CloudArg; encryption?: boolean }
-): IObjectStorage;
-
-/** Create a backup policy */
+/** Create a backup policy (future) */
 function createBackupPolicy(
   name: string,
   config: {
@@ -713,25 +768,27 @@ interface IRequiredTags {
 
 ```typescript
 import { createCluster, createNetwork, createDns, createPlatformStack } from "@reyemtech/nimbus";
+import type { INetwork, ICluster, IDns } from "@reyemtech/nimbus";
 
-const network = createNetwork("prod", {
+const network = await createNetwork("prod", {
   cloud: "aws",
   cidr: "10.0.0.0/16",
   natStrategy: "fck-nat",
-});
+}) as INetwork;
 
-const cluster = createCluster("prod", {
+const cluster = await createCluster("prod", {
   cloud: "aws",
   nodePools: [
     { name: "system", instanceType: "t3.medium", minNodes: 2, maxNodes: 4 },
     { name: "workers", instanceType: "c6a.large", minNodes: 2, maxNodes: 8, spot: true },
   ],
-});
+  providerOptions: { aws: { autoMode: true } },
+}, network) as ICluster;
 
-const dns = createDns("prod", {
+const dns = await createDns("prod", {
   cloud: "aws",
   zoneName: "reyem.tech",
-});
+}) as IDns;
 
 const platform = createPlatformStack("prod", {
   cluster,
@@ -741,10 +798,41 @@ const platform = createPlatformStack("prod", {
 });
 ```
 
+### Standalone Resources (No Cluster Required)
+
+Factory functions are independent — you can use any abstraction without provisioning a full cluster. For example, to create just a state backend or DNS zone:
+
+```typescript
+import { createStateBackend, createDns, createSecrets } from "@reyemtech/nimbus";
+import type { IStateBackend, IDns, ISecrets } from "@reyemtech/nimbus";
+
+// State backend — just S3 + DynamoDB, no cluster needed
+const state = await createStateBackend("prod", {
+  cloud: "aws",
+  versioning: true,
+  encryption: true,
+  locking: { enabled: true },
+}) as IStateBackend;
+
+// DNS zone — standalone
+const dns = await createDns("prod", { cloud: "aws", zoneName: "example.com" }) as IDns;
+
+// Secrets store — standalone
+const secrets = await createSecrets("prod", { cloud: "aws" }) as ISecrets;
+```
+
 ### Multi-Cloud (BCDR)
 
 ```typescript
-const clusters = createCluster("prod", {
+import type { INetwork, ICluster } from "@reyemtech/nimbus";
+
+const networks = await createNetwork("prod", {
+  cloud: ["aws", "azure"],
+  cidr: "10.0.0.0/16",
+  providerOptions: { azure: { resourceGroupName: "rg-prod" } },
+}) as INetwork[];
+
+const clusters = await createCluster("prod", {
   cloud: [
     { provider: "aws", region: "us-east-1" },
     { provider: "azure", region: "canadacentral" },
@@ -753,7 +841,11 @@ const clusters = createCluster("prod", {
     { name: "system", instanceType: "auto", minNodes: 2, maxNodes: 4 },
     { name: "workers", instanceType: "auto", minNodes: 2, maxNodes: 8, spot: true },
   ],
-});
+  providerOptions: {
+    aws: { autoMode: true },
+    azure: { resourceGroupName: "rg-prod" },
+  },
+}, networks) as ICluster[];
 
 const glb = createGlobalLoadBalancer("prod", {
   strategy: "active-active",
@@ -767,7 +859,7 @@ const glb = createGlobalLoadBalancer("prod", {
 ### Escape Hatch
 
 ```typescript
-const cluster = createCluster("prod", { cloud: "aws", ... });
+const cluster = await createCluster("prod", { cloud: "aws", ... }, network) as ICluster;
 
 // Access the native EKS cluster resource
 const eksCluster = cluster.nativeResource as aws.eks.Cluster;

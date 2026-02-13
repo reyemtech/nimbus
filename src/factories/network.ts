@@ -11,8 +11,6 @@ import type { INetwork, INetworkConfig } from "../network";
 import { autoOffsetCidrs, parseCidr } from "../network";
 import { resolveCloudTarget, UnsupportedFeatureError } from "../types";
 import type { ResolvedCloudTarget } from "../types";
-import { createAwsNetwork } from "../aws";
-import { createAzureNetwork } from "../azure";
 import type { IProviderOptions } from "./types";
 import { isMultiCloud } from "./types";
 
@@ -31,21 +29,24 @@ export type ICreateNetworkConfig = INetworkConfig & {
  * @example
  * ```typescript
  * // Single cloud
- * const network = createNetwork("prod", {
+ * const network = await createNetwork("prod", {
  *   cloud: "aws",
  *   cidr: "10.0.0.0/16",
  *   natStrategy: "fck-nat",
  * });
  *
  * // Multi-cloud
- * const networks = createNetwork("prod", {
+ * const networks = await createNetwork("prod", {
  *   cloud: ["aws", "azure"],
  *   cidr: "10.0.0.0/16",
  *   providerOptions: { azure: { resourceGroupName: "my-rg" } },
  * });
  * ```
  */
-export function createNetwork(name: string, config: ICreateNetworkConfig): INetwork | INetwork[] {
+export async function createNetwork(
+  name: string,
+  config: ICreateNetworkConfig
+): Promise<INetwork | INetwork[]> {
   if (!isMultiCloud(config.cloud)) {
     const target = resolveCloudTarget(config.cloud);
     return dispatchNetwork(name, config, target, config.providerOptions);
@@ -54,28 +55,32 @@ export function createNetwork(name: string, config: ICreateNetworkConfig): INetw
   const targets = resolveCloudTarget(config.cloud);
   const cidrs = resolveMultiCloudCidrs(config.cidr, targets.length);
 
-  return targets.map((target, i) => {
-    const perTargetConfig = { ...config, cloud: config.cloud, cidr: cidrs[i] };
-    return dispatchNetwork(
-      `${name}-${target.provider}`,
-      perTargetConfig,
-      target,
-      config.providerOptions
-    );
-  });
+  return Promise.all(
+    targets.map((target, i) => {
+      const perTargetConfig = { ...config, cloud: config.cloud, cidr: cidrs[i] };
+      return dispatchNetwork(
+        `${name}-${target.provider}`,
+        perTargetConfig,
+        target,
+        config.providerOptions
+      );
+    })
+  );
 }
 
-function dispatchNetwork(
+async function dispatchNetwork(
   name: string,
   config: INetworkConfig,
   target: ResolvedCloudTarget,
   opts?: IProviderOptions
-): INetwork {
+): Promise<INetwork> {
   const targetConfig = { ...config, cloud: { provider: target.provider, region: target.region } };
 
   switch (target.provider) {
-    case "aws":
+    case "aws": {
+      const { createAwsNetwork } = await import("../aws/index.js");
       return createAwsNetwork(name, targetConfig, opts?.aws);
+    }
     case "azure": {
       const azureOpts = opts?.azure;
       if (!azureOpts) {
@@ -84,6 +89,7 @@ function dispatchNetwork(
           "azure"
         );
       }
+      const { createAzureNetwork } = await import("../azure/index.js");
       return createAzureNetwork(name, targetConfig, {
         resourceGroupName: azureOpts.resourceGroupName,
         subnetCount: azureOpts.subnetCount,

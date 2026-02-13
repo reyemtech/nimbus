@@ -136,8 +136,8 @@ describe("factory types", () => {
 });
 
 describe("createNetwork factory", () => {
-  it("dispatches to AWS for cloud: 'aws'", () => {
-    const result = createNetwork("prod", {
+  it("dispatches to AWS for cloud: 'aws'", async () => {
+    const result = await createNetwork("prod", {
       cloud: "aws",
       cidr: "10.0.0.0/16",
       natStrategy: "fck-nat",
@@ -149,8 +149,8 @@ describe("createNetwork factory", () => {
     expect((result as INetwork).name).toBe("prod");
   });
 
-  it("dispatches to Azure for cloud: 'azure' with providerOptions", () => {
-    const result = createNetwork("prod", {
+  it("dispatches to Azure for cloud: 'azure' with providerOptions", async () => {
+    const result = await createNetwork("prod", {
       cloud: "azure",
       cidr: "10.1.0.0/16",
       providerOptions: { azure: { resourceGroupName: "my-rg" } },
@@ -161,17 +161,17 @@ describe("createNetwork factory", () => {
     expect(Array.isArray(result)).toBe(false);
   });
 
-  it("throws when Azure is targeted without providerOptions", () => {
-    expect(() =>
+  it("throws when Azure is targeted without providerOptions", async () => {
+    await expect(
       createNetwork("prod", {
         cloud: "azure",
         cidr: "10.1.0.0/16",
       })
-    ).toThrow("Azure requires providerOptions.azure.resourceGroupName");
+    ).rejects.toThrow("Azure requires providerOptions.azure.resourceGroupName");
   });
 
-  it("returns array for multi-cloud", () => {
-    const result = createNetwork("prod", {
+  it("returns array for multi-cloud", async () => {
+    const result = await createNetwork("prod", {
       cloud: ["aws", "azure"],
       cidr: "10.0.0.0/16",
       providerOptions: { azure: { resourceGroupName: "my-rg" } },
@@ -183,8 +183,8 @@ describe("createNetwork factory", () => {
     expect(createAzureNetwork).toHaveBeenCalledTimes(1);
   });
 
-  it("auto-offsets CIDRs for multi-cloud", () => {
-    createNetwork("prod", {
+  it("auto-offsets CIDRs for multi-cloud", async () => {
+    await createNetwork("prod", {
       cloud: ["aws", "azure"],
       cidr: "10.0.0.0/16",
       providerOptions: { azure: { resourceGroupName: "my-rg" } },
@@ -197,8 +197,8 @@ describe("createNetwork factory", () => {
     expect(azureCall?.[1]?.cidr).toBe("10.1.0.0/16");
   });
 
-  it("passes AWS options through providerOptions", () => {
-    createNetwork("prod", {
+  it("passes AWS options through providerOptions", async () => {
+    await createNetwork("prod", {
       cloud: "aws",
       cidr: "10.0.0.0/16",
       natStrategy: "fck-nat",
@@ -214,17 +214,17 @@ describe("createNetwork factory", () => {
     });
   });
 
-  it("throws for unsupported provider", () => {
-    expect(() =>
+  it("throws for unsupported provider", async () => {
+    await expect(
       createNetwork("prod", {
         cloud: "gcp" as "aws",
         cidr: "10.0.0.0/16",
       })
-    ).toThrow("network");
+    ).rejects.toThrow("network");
   });
 
-  it("uses CloudTarget with explicit region", () => {
-    createNetwork("prod", {
+  it("uses CloudTarget with explicit region", async () => {
+    await createNetwork("prod", {
       cloud: { provider: "aws", region: "eu-west-1" },
       cidr: "10.0.0.0/16",
     });
@@ -240,15 +240,15 @@ describe("createCluster factory", () => {
   const awsNetwork = makeNetwork("prod", "aws");
   const azureNetwork = makeNetwork("prod", "azure");
 
-  it("dispatches to EKS for cloud: 'aws'", () => {
-    createCluster("prod", { cloud: "aws", nodePools }, awsNetwork);
+  it("dispatches to EKS for cloud: 'aws'", async () => {
+    await createCluster("prod", { cloud: "aws", nodePools }, awsNetwork);
 
     expect(createEksCluster).toHaveBeenCalledTimes(1);
     expect(createAksCluster).not.toHaveBeenCalled();
   });
 
-  it("dispatches to AKS for cloud: 'azure'", () => {
-    createCluster(
+  it("dispatches to AKS for cloud: 'azure'", async () => {
+    await createCluster(
       "prod",
       {
         cloud: "azure",
@@ -262,8 +262,8 @@ describe("createCluster factory", () => {
     expect(createEksCluster).not.toHaveBeenCalled();
   });
 
-  it("passes AWS options through providerOptions", () => {
-    createCluster(
+  it("passes AWS options through providerOptions", async () => {
+    await createCluster(
       "prod",
       {
         cloud: "aws",
@@ -280,8 +280,8 @@ describe("createCluster factory", () => {
     });
   });
 
-  it("returns array for multi-cloud and matches networks by provider", () => {
-    const result = createCluster(
+  it("returns array for multi-cloud and matches networks by provider", async () => {
+    const result = await createCluster(
       "prod",
       {
         cloud: ["aws", "azure"],
@@ -297,8 +297,8 @@ describe("createCluster factory", () => {
     expect(createAksCluster).toHaveBeenCalledTimes(1);
   });
 
-  it("throws when no matching network found", () => {
-    expect(() =>
+  it("throws when no matching network found", async () => {
+    await expect(
       createCluster(
         "prod",
         {
@@ -308,17 +308,17 @@ describe("createCluster factory", () => {
         },
         [awsNetwork] // missing azure network
       )
-    ).toThrow('No network found for provider "azure"');
+    ).rejects.toThrow('No network found for provider "azure"');
   });
 
-  it("throws when Azure is targeted without providerOptions", () => {
-    expect(() => createCluster("prod", { cloud: "azure", nodePools }, azureNetwork)).toThrow(
-      "Azure requires providerOptions.azure.resourceGroupName"
-    );
+  it("throws when Azure is targeted without providerOptions", async () => {
+    await expect(
+      createCluster("prod", { cloud: "azure", nodePools }, azureNetwork)
+    ).rejects.toThrow("Azure requires providerOptions.azure.resourceGroupName");
   });
 
-  it("accepts single network for single cloud", () => {
-    createCluster("prod", { cloud: "aws", nodePools }, awsNetwork);
+  it("accepts single network for single cloud", async () => {
+    await createCluster("prod", { cloud: "aws", nodePools }, awsNetwork);
 
     expect(createEksCluster).toHaveBeenCalledTimes(1);
     const passedNetwork = vi.mocked(createEksCluster).mock.calls[0]?.[2];
@@ -327,8 +327,8 @@ describe("createCluster factory", () => {
 });
 
 describe("createDns factory", () => {
-  it("dispatches to Route53 for cloud: 'aws'", () => {
-    const result = createDns("prod", {
+  it("dispatches to Route53 for cloud: 'aws'", async () => {
+    const result = await createDns("prod", {
       cloud: "aws",
       zoneName: "example.com",
     });
@@ -338,8 +338,8 @@ describe("createDns factory", () => {
     expect(Array.isArray(result)).toBe(false);
   });
 
-  it("dispatches to Azure DNS for cloud: 'azure'", () => {
-    createDns("prod", {
+  it("dispatches to Azure DNS for cloud: 'azure'", async () => {
+    await createDns("prod", {
       cloud: "azure",
       zoneName: "example.com",
       providerOptions: { azure: { resourceGroupName: "my-rg" } },
@@ -349,17 +349,17 @@ describe("createDns factory", () => {
     expect(createRoute53Dns).not.toHaveBeenCalled();
   });
 
-  it("throws for Azure without providerOptions", () => {
-    expect(() =>
+  it("throws for Azure without providerOptions", async () => {
+    await expect(
       createDns("prod", {
         cloud: "azure",
         zoneName: "example.com",
       })
-    ).toThrow("Azure requires providerOptions.azure.resourceGroupName");
+    ).rejects.toThrow("Azure requires providerOptions.azure.resourceGroupName");
   });
 
-  it("returns array for multi-cloud", () => {
-    const result = createDns("prod", {
+  it("returns array for multi-cloud", async () => {
+    const result = await createDns("prod", {
       cloud: ["aws", "azure"],
       zoneName: "example.com",
       providerOptions: { azure: { resourceGroupName: "my-rg" } },
@@ -371,8 +371,8 @@ describe("createDns factory", () => {
 });
 
 describe("createSecrets factory", () => {
-  it("dispatches to AWS Secrets Manager for cloud: 'aws'", () => {
-    const result = createSecrets("prod", {
+  it("dispatches to AWS Secrets Manager for cloud: 'aws'", async () => {
+    const result = await createSecrets("prod", {
       cloud: "aws",
       backend: "aws-secrets-manager",
     });
@@ -382,8 +382,8 @@ describe("createSecrets factory", () => {
     expect(Array.isArray(result)).toBe(false);
   });
 
-  it("dispatches to Azure Key Vault for cloud: 'azure'", () => {
-    createSecrets("prod", {
+  it("dispatches to Azure Key Vault for cloud: 'azure'", async () => {
+    await createSecrets("prod", {
       cloud: "azure",
       backend: "azure-key-vault",
       providerOptions: {
@@ -395,27 +395,27 @@ describe("createSecrets factory", () => {
     expect(createAwsSecrets).not.toHaveBeenCalled();
   });
 
-  it("throws for Azure without tenantId", () => {
-    expect(() =>
+  it("throws for Azure without tenantId", async () => {
+    await expect(
       createSecrets("prod", {
         cloud: "azure",
         backend: "azure-key-vault",
         providerOptions: { azure: { resourceGroupName: "my-rg" } },
       })
-    ).toThrow("Azure requires providerOptions.azure with resourceGroupName and tenantId");
+    ).rejects.toThrow("Azure requires providerOptions.azure with resourceGroupName and tenantId");
   });
 
-  it("throws for Azure without providerOptions", () => {
-    expect(() =>
+  it("throws for Azure without providerOptions", async () => {
+    await expect(
       createSecrets("prod", {
         cloud: "azure",
         backend: "azure-key-vault",
       })
-    ).toThrow("Azure requires providerOptions.azure with resourceGroupName and tenantId");
+    ).rejects.toThrow("Azure requires providerOptions.azure with resourceGroupName and tenantId");
   });
 
-  it("returns array for multi-cloud", () => {
-    const result = createSecrets("prod", {
+  it("returns array for multi-cloud", async () => {
+    const result = await createSecrets("prod", {
       cloud: ["aws", "azure"],
       providerOptions: {
         azure: { resourceGroupName: "my-rg", tenantId: "tenant-123" },
@@ -428,8 +428,8 @@ describe("createSecrets factory", () => {
 });
 
 describe("multi-cloud naming", () => {
-  it("prefixes resource names with provider for multi-cloud", () => {
-    createNetwork("prod", {
+  it("prefixes resource names with provider for multi-cloud", async () => {
+    await createNetwork("prod", {
       cloud: ["aws", "azure"],
       cidr: "10.0.0.0/16",
       providerOptions: { azure: { resourceGroupName: "my-rg" } },
@@ -439,8 +439,8 @@ describe("multi-cloud naming", () => {
     expect(vi.mocked(createAzureNetwork).mock.calls[0]?.[0]).toBe("prod-azure");
   });
 
-  it("uses original name for single-cloud", () => {
-    createNetwork("prod", {
+  it("uses original name for single-cloud", async () => {
+    await createNetwork("prod", {
       cloud: "aws",
       cidr: "10.0.0.0/16",
     });

@@ -111,7 +111,47 @@ const cidrs = buildCidrMap(["aws", "azure", "gcp"]);
 
 **State backend:** Pulumi Cloud (or S3/Azure Blob — configurable)
 
-**State recovery:**
+### Provisioning State Storage with nimbus
+
+Use `createStateBackend()` to provision cloud state storage with BCDR features built in:
+
+```typescript
+import { createStateBackend } from "@reyemtech/nimbus";
+import type { IStateBackend } from "@reyemtech/nimbus";
+
+// AWS: S3 + DynamoDB locking + cross-region replication
+const state = await createStateBackend("prod", {
+  cloud: "aws",
+  versioning: true,
+  encryption: true,
+  locking: { enabled: true },
+  replication: { enabled: true, destinationRegion: "us-west-2" },
+}) as IStateBackend;
+
+// Azure: StorageAccount (HTTPS, TLS 1.2) + GRS geo-replication
+const azureState = await createStateBackend("prod", {
+  cloud: "azure",
+  versioning: true,
+  replication: { enabled: true },  // Uses Standard_GRS SKU
+  providerOptions: { azure: { resourceGroupName: "rg-state" } },
+}) as IStateBackend;
+
+// Use the backend URL with Pulumi
+// state.backendUrl => "s3://prod-state-xxxxx"
+// azureState.backendUrl => "azblob://pulumistate"
+```
+
+| Feature | AWS | Azure |
+|---------|-----|-------|
+| **Storage** | S3 BucketV2 | StorageAccount (StorageV2) |
+| **Versioning** | BucketVersioningV2 | BlobServiceProperties |
+| **Encryption** | SSE (AES256 or KMS) | HTTPS-only, TLS 1.2 |
+| **Locking** | DynamoDB (PAY_PER_REQUEST) | Azure blob leases (native) |
+| **Replication** | Cross-region replication (IAM + replica bucket) | Standard_GRS SKU |
+| **Public access** | Always blocked (PublicAccessBlock) | Always blocked |
+
+### State Recovery
+
 ```bash
 # Export state
 pulumi stack export > state-backup.json
