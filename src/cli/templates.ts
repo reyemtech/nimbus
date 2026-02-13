@@ -20,6 +20,63 @@ export interface ITemplateInfo {
   readonly generate: (name: string) => ITemplateFiles;
 }
 
+/**
+ * Generate a Pulumi.yaml project file.
+ *
+ * @param name - Project name
+ * @returns Pulumi.yaml contents
+ */
+export function generatePulumiYaml(name: string): string {
+  return `name: ${name}
+runtime:
+  name: nodejs
+  options:
+    typescript: true
+description: ${name} — Nimbus infrastructure project
+`;
+}
+
+/**
+ * Generate a package.json for a new project.
+ *
+ * @param name - Project name
+ * @returns package.json contents
+ */
+export function generatePackageJson(name: string): string {
+  return JSON.stringify(
+    {
+      name,
+      version: "0.0.1",
+      main: "index.ts",
+      devDependencies: {
+        "@types/node": "^22",
+      },
+    },
+    null,
+    2
+  );
+}
+
+/** Shared tsconfig for scaffolded projects. */
+export const PROJECT_TSCONFIG = JSON.stringify(
+  {
+    compilerOptions: {
+      strict: true,
+      outDir: "bin",
+      target: "es2022",
+      module: "commonjs",
+      moduleResolution: "node",
+      sourceMap: true,
+      experimentalDecorators: true,
+      forceConsistentCasingInFileNames: true,
+      skipLibCheck: true,
+    },
+    include: ["."],
+  },
+  null,
+  2
+);
+
 /** Valid template names accepted by the CLI. */
 export const TEMPLATE_NAMES = [
   "empty",

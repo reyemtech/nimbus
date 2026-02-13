@@ -14,9 +14,15 @@
  */
 
 import { execSync } from "child_process";
-import { writeFileSync, existsSync } from "fs";
+import { mkdirSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
-import { TEMPLATE_NAMES, TEMPLATES } from "./cli/templates.js";
+import {
+  TEMPLATE_NAMES,
+  TEMPLATES,
+  generatePulumiYaml,
+  generatePackageJson,
+  PROJECT_TSCONFIG,
+} from "./cli/templates.js";
 import type { TemplateName } from "./cli/templates.js";
 
 const PROVIDER_PACKAGES: Readonly<Record<string, ReadonlyArray<string>>> = {
@@ -98,7 +104,8 @@ function run(cmd: string, cwd: string): void {
 /**
  * Scaffold a new project from a template.
  *
- * Runs pulumi new, installs nimbus + provider SDKs, and writes template files.
+ * Generates Pulumi.yaml, package.json, tsconfig.json, index.ts, and README.md,
+ * then runs npm install to set up dependencies.
  *
  * @param args - CLI arguments after "new" (name, template)
  */
@@ -133,16 +140,17 @@ function newProject(args: string[]): void {
     process.exit(1);
   }
 
-  // 1. Pulumi init — creates dir, Pulumi.yaml, package.json, tsconfig.json
   console.log(`\nScaffolding "${name}" from template "${template}"...\n`);
-  try {
-    run(`pulumi new typescript --yes --name ${name} --dir ${name}`, process.cwd());
-  } catch (error: unknown) {
-    const detail = error instanceof Error ? error.message : String(error);
-    console.error(`\nFailed to run pulumi new: ${detail}`);
-    console.error("Make sure Pulumi CLI is installed: https://www.pulumi.com/docs/install/");
-    process.exit(1);
-  }
+
+  // 1. Create project directory and files
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "Pulumi.yaml"), generatePulumiYaml(name));
+  writeFileSync(join(dir, "package.json"), generatePackageJson(name));
+  writeFileSync(join(dir, "tsconfig.json"), PROJECT_TSCONFIG);
+
+  const files = templateInfo.generate(name);
+  writeFileSync(join(dir, "index.ts"), files.indexTs);
+  writeFileSync(join(dir, "README.md"), files.readmeMd);
 
   // 2. Install nimbus + provider SDKs
   const providerPkgs = templateInfo.providers.flatMap((p) => PROVIDER_PACKAGES[p] ?? []);
@@ -155,11 +163,6 @@ function newProject(args: string[]): void {
     console.error(`\nFailed to install dependencies: ${detail}`);
     process.exit(1);
   }
-
-  // 3. Write template files (overwrite pulumi's default index.ts)
-  const files = templateInfo.generate(name);
-  writeFileSync(join(dir, "index.ts"), files.indexTs);
-  writeFileSync(join(dir, "README.md"), files.readmeMd);
 
   console.log(`\nDone! Project "${name}" is ready.\n`);
   console.log(`  cd ${name}`);
