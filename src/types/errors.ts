@@ -1,5 +1,5 @@
 /**
- * Custom error classes for @reyemtech/pulumi-any-cloud.
+ * Custom error classes for @reyemtech/nimbus.
  *
  * All errors extend AnyCloudError with a machine-readable code.
  * Use discriminated error codes for programmatic handling.
@@ -7,7 +7,7 @@
  * @module types/errors
  */
 
-/** Error codes for all pulumi-any-cloud errors. */
+/** Error codes for all nimbus errors. */
 export const ERROR_CODES = {
   CLOUD_VALIDATION: "CLOUD_VALIDATION",
   CIDR_OVERLAP: "CIDR_OVERLAP",
@@ -22,7 +22,7 @@ export const ERROR_CODES = {
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
 
 /**
- * Base error for all pulumi-any-cloud errors.
+ * Base error for all nimbus errors.
  *
  * @example
  * ```typescript

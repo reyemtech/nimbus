@@ -1,5 +1,5 @@
 /**
- * Platform stack interfaces for @reyemtech/pulumi-any-cloud.
+ * Platform stack interfaces for @reyemtech/nimbus.
  *
  * Cloud-agnostic platform components deployed via Helm to any ICluster.
  * These are the components used across all 3 client environments:

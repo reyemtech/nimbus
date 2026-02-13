@@ -1,5 +1,5 @@
 /**
- * @reyemtech/pulumi-any-cloud
+ * @reyemtech/nimbus
  *
  * Cloud-agnostic infrastructure abstractions for Pulumi.
  * Enables BCDR: any client environment fully reproducible from code,
@@ -115,7 +115,24 @@ export {
   createGlobalLoadBalancer,
 } from "./global-lb";
 
-// AWS Provider
+// Factory functions (primary API)
+export {
+  createNetwork,
+  createCluster,
+  createDns,
+  createSecrets,
+  type ICreateNetworkConfig,
+  type ICreateClusterConfig,
+  type ICreateDnsConfig,
+  type ICreateSecretsConfig,
+  type IProviderOptions,
+  type IAwsProviderOptions,
+  type IAzureProviderOptions,
+  extractProvider,
+  isMultiCloud,
+} from "./factories";
+
+// AWS Provider (direct access)
 export {
   createAwsNetwork,
   type IAwsNetworkOptions,
@@ -125,7 +142,7 @@ export {
   createAwsSecrets,
 } from "./aws";
 
-// Azure Provider
+// Azure Provider (direct access)
 export {
   createAzureNetwork,
   type IAzureNetworkOptions,

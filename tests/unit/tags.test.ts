@@ -103,7 +103,7 @@ describe("mergeWithRequiredTags", () => {
       environment: "prod",
       client: "acme",
       costCenter: "eng",
-      managedBy: "pulumi-any-cloud",
+      managedBy: "nimbus",
       custom: "value",
     });
   });
@@ -113,7 +113,7 @@ describe("mergeWithRequiredTags", () => {
       { environment: "prod", client: "acme", costCenter: "eng" },
       { managedBy: "terraform", environment: "dev" }
     );
-    expect(result.managedBy).toBe("pulumi-any-cloud");
+    expect(result.managedBy).toBe("nimbus");
     expect(result.environment).toBe("prod");
   });
 
@@ -123,7 +123,7 @@ describe("mergeWithRequiredTags", () => {
       client: "acme",
       costCenter: "eng",
     });
-    expect(result.managedBy).toBe("pulumi-any-cloud");
+    expect(result.managedBy).toBe("nimbus");
     expect(Object.keys(result)).toHaveLength(4);
   });
 });

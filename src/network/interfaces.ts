@@ -1,5 +1,5 @@
 /**
- * Network interfaces for @reyemtech/pulumi-any-cloud.
+ * Network interfaces for @reyemtech/nimbus.
  *
  * Abstracts VPC (AWS), VNet (Azure), and VPC (GCP) provisioning.
  * Includes NAT strategy options (managed, fck-nat, none) and

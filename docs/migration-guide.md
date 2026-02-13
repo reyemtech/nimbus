@@ -1,6 +1,6 @@
 # Migration Guide: Single-Cloud to Multi-Cloud
 
-How to evolve a `@reyemtech/pulumi-any-cloud` deployment from single-cloud to multi-cloud active-active.
+How to evolve a `@reyemtech/nimbus` deployment from single-cloud to multi-cloud active-active.
 
 ## Phase 1: Single Cloud (Starting Point)
 
@@ -12,7 +12,7 @@ import {
   createEksCluster,
   createRoute53Dns,
   createPlatformStack,
-} from "@reyemtech/pulumi-any-cloud";
+} from "@reyemtech/nimbus";
 
 const network = createAwsNetwork("prod", {
   cloud: "aws",
@@ -42,7 +42,7 @@ createPlatformStack("prod", {
 Before adding a second cloud, set up CIDR planning so VPCs don't overlap (required for peering/mesh):
 
 ```diff
-+import { buildCidrMap } from "@reyemtech/pulumi-any-cloud";
++import { buildCidrMap } from "@reyemtech/nimbus";
 +
 +// Plan CIDRs for current + future clouds
 +const cidrs = buildCidrMap(["aws", "azure"]);
@@ -66,7 +66,7 @@ Add the Azure infrastructure alongside AWS:
 +import {
 +  createAzureNetwork,
 +  createAksCluster,
-+} from "@reyemtech/pulumi-any-cloud";
++} from "@reyemtech/nimbus";
 +
 +const resourceGroupName = "rg-prod-canadacentral";
 +
@@ -109,7 +109,7 @@ This deploys Traefik, cert-manager, External DNS, and any other enabled componen
 Route traffic across both clusters:
 
 ```diff
-+import { createGlobalLoadBalancer } from "@reyemtech/pulumi-any-cloud";
++import { createGlobalLoadBalancer } from "@reyemtech/nimbus";
 +
 +const glb = createGlobalLoadBalancer("prod", {
 +  strategy: "active-active",
@@ -141,7 +141,7 @@ Start with `active-passive` if you want BCDR without doubling costs, then switch
 Add validation to catch misconfigurations early:
 
 ```typescript
-import { validateMultiCloud, assertValidMultiCloud } from "@reyemtech/pulumi-any-cloud";
+import { validateMultiCloud, assertValidMultiCloud } from "@reyemtech/nimbus";
 
 // Check for duplicate targets, naming issues
 const result = validateMultiCloud([

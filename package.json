@@ -1,5 +1,5 @@
 {
-  "name": "@reyemtech/pulumi-any-cloud",
+  "name": "@reyemtech/nimbus",
   "version": "0.1.0",
   "description": "Cloud-agnostic infrastructure abstractions for Pulumi",
   "main": "./dist/cjs/index.js",
@@ -52,11 +52,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/reyemtech/pulumi-any-cloud.git"
+    "url": "https://github.com/reyemtech/nimbus.git"
   },
   "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "engines": {
     "node": ">=20"

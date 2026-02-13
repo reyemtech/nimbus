@@ -1,5 +1,5 @@
 /**
- * Secrets interfaces for @reyemtech/pulumi-any-cloud.
+ * Secrets interfaces for @reyemtech/nimbus.
  *
  * Abstracts secret management across HashiCorp Vault (in-cluster),
  * AWS Secrets Manager, Azure Key Vault, and GCP Secret Manager.

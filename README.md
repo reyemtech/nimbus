@@ -1,4 +1,4 @@
-# @reyemtech/pulumi-any-cloud
+# @reyemtech/nimbus
 
 Cloud-agnostic infrastructure abstractions for [Pulumi](https://www.pulumi.com/). Write IaC once, deploy to AWS, Azure, or GCP. Enables full BCDR: any client environment is fully reproducible from code — cloud migration = change one config value.
 
@@ -9,6 +9,7 @@ Every client environment at ReyemTech follows the same pattern: network + cluste
 **Key benefits:**
 - **Cloud migration in one line** — change `cloud: "aws"` to `cloud: "azure"` and redeploy
 - **Multi-cloud active-active** — deploy to AWS + Azure simultaneously with a Global Load Balancer
+- **Factory pattern** — `createNetwork()`, `createCluster()`, `createDns()`, `createSecrets()` dispatch to the right cloud automatically
 - **Cost-optimized defaults** — fck-nat (~$3/mo vs $32/mo managed NAT), spot instances, Auto Mode
 - **Escape hatches** — every resource exposes its native cloud object via `nativeResource`
 - **Type-safe** — full TypeScript interfaces with discriminated unions for provider-specific config
@@ -16,7 +17,7 @@ Every client environment at ReyemTech follows the same pattern: network + cluste
 ## Install
 
 ```bash
-npm install @reyemtech/pulumi-any-cloud
+npm install @reyemtech/nimbus
 ```
 
 **Peer dependency:** `@pulumi/pulumi >= 3.0.0`
@@ -41,39 +42,28 @@ npm install @pulumi/kubernetes
 ### Single Cloud (AWS)
 
 ```typescript
-import {
-  createAwsNetwork,
-  createEksCluster,
-  createRoute53Dns,
-  createPlatformStack,
-} from "@reyemtech/pulumi-any-cloud";
+import { createNetwork, createCluster, createDns, createPlatformStack } from "@reyemtech/nimbus";
+import type { INetwork, ICluster, IDns } from "@reyemtech/nimbus";
 
 // Network with fck-nat (~$3/mo)
-const network = createAwsNetwork("prod", {
+const network = createNetwork("prod", {
   cloud: "aws",
   cidr: "10.0.0.0/16",
   natStrategy: "fck-nat",
-});
+}) as INetwork;
 
 // EKS cluster with Auto Mode
-const cluster = createEksCluster(
-  "prod",
-  {
-    cloud: "aws",
-    nodePools: [
-      { name: "system", instanceType: "t4g.small", minNodes: 2, maxNodes: 3 },
-      { name: "workers", instanceType: "c6a.large", minNodes: 1, maxNodes: 10, spot: true },
-    ],
-  },
-  network,
-  { autoMode: true },
-);
+const cluster = createCluster("prod", {
+  cloud: "aws",
+  nodePools: [
+    { name: "system", instanceType: "t4g.small", minNodes: 2, maxNodes: 3 },
+    { name: "workers", instanceType: "c6a.large", minNodes: 1, maxNodes: 10, spot: true },
+  ],
+  providerOptions: { aws: { autoMode: true } },
+}, network) as ICluster;
 
 // DNS zone
-const dns = createRoute53Dns("prod", {
-  cloud: "aws",
-  zoneName: "example.com",
-});
+const dns = createDns("prod", { cloud: "aws", zoneName: "example.com" }) as IDns;
 
 // Platform stack (Traefik, cert-manager, External DNS, ArgoCD, Vault)
 createPlatformStack("prod", {
@@ -87,27 +77,27 @@ createPlatformStack("prod", {
 ### Single Cloud (Azure)
 
 ```typescript
-import {
-  createAzureNetwork,
-  createAksCluster,
-  createAzureDns,
-  createPlatformStack,
-} from "@reyemtech/pulumi-any-cloud";
+import { createNetwork, createCluster, createDns, createPlatformStack } from "@reyemtech/nimbus";
+import type { INetwork, ICluster } from "@reyemtech/nimbus";
 
-const network = createAzureNetwork("prod", {
+const providerOptions = { azure: { resourceGroupName: "rg-prod" } };
+
+const network = createNetwork("prod", {
   cloud: "azure",
   cidr: "10.1.0.0/16",
   natStrategy: "managed",
-}, { resourceGroupName: "rg-prod" });
+  providerOptions,
+}) as INetwork;
 
-const cluster = createAksCluster("prod", {
+const cluster = createCluster("prod", {
   cloud: "azure",
   nodePools: [
     { name: "system", instanceType: "Standard_D2s_v5", minNodes: 2, maxNodes: 3, mode: "system" },
     { name: "workers", instanceType: "Standard_D4s_v5", minNodes: 1, maxNodes: 10, spot: true, mode: "user" },
   ],
   virtualNodes: true,
-}, network, { resourceGroupName: "rg-prod" });
+  providerOptions,
+}, network) as ICluster;
 
 createPlatformStack("prod", {
   cluster,
@@ -119,29 +109,36 @@ createPlatformStack("prod", {
 ### Multi-Cloud (AWS + Azure)
 
 ```typescript
-import {
-  createAwsNetwork,
-  createEksCluster,
-  createAzureNetwork,
-  createAksCluster,
-  createGlobalLoadBalancer,
-  buildCidrMap,
-} from "@reyemtech/pulumi-any-cloud";
+import { createNetwork, createCluster, createGlobalLoadBalancer } from "@reyemtech/nimbus";
+import type { INetwork, ICluster } from "@reyemtech/nimbus";
 
-// Auto-generate non-overlapping CIDRs
-const cidrs = buildCidrMap(["aws", "azure"]);
-// => { aws: "10.0.0.0/16", azure: "10.1.0.0/16" }
+const providerOptions = {
+  aws: { autoMode: true },
+  azure: { resourceGroupName: "rg-prod" },
+};
 
-const awsNet = createAwsNetwork("prod", { cloud: "aws", cidr: cidrs["aws"], natStrategy: "fck-nat" });
-const awsCluster = createEksCluster("prod", { cloud: "aws", nodePools: [...] }, awsNet, { autoMode: true });
+// Auto-offsets CIDRs: AWS gets 10.0.0.0/16, Azure gets 10.1.0.0/16
+const networks = createNetwork("prod", {
+  cloud: ["aws", "azure"],
+  cidr: "10.0.0.0/16",
+  natStrategy: "fck-nat",
+  providerOptions,
+}) as INetwork[];
 
-const azNet = createAzureNetwork("prod", { cloud: "azure", cidr: cidrs["azure"] }, { resourceGroupName: "rg-prod" });
-const azCluster = createAksCluster("prod", { cloud: "azure", nodePools: [...] }, azNet, { resourceGroupName: "rg-prod" });
+// Networks auto-matched by provider
+const clusters = createCluster("prod", {
+  cloud: ["aws", "azure"],
+  nodePools: [
+    { name: "system", instanceType: "t4g.small", minNodes: 2, maxNodes: 3 },
+    { name: "workers", instanceType: "c6a.large", minNodes: 2, maxNodes: 8, spot: true },
+  ],
+  providerOptions,
+}, networks) as ICluster[];
 
 // Global Load Balancer — active-active across both clouds
 const glb = createGlobalLoadBalancer("prod", {
   strategy: "active-active",
-  clusters: [awsCluster, azCluster],
+  clusters,
   domain: "app.example.com",
   healthCheck: { path: "/health", port: 443, protocol: "HTTPS" },
   dnsProvider: "route53",
@@ -151,7 +148,8 @@ const glb = createGlobalLoadBalancer("prod", {
 ## Architecture
 
 ```
-@reyemtech/pulumi-any-cloud
+@reyemtech/nimbus
+├── factories/      # Cloud-agnostic factory functions (primary API)
 ├── types/          # CloudProvider, CloudTarget, tags, errors, validation
 ├── network/        # VPC (AWS), VNet (Azure) + NAT + CIDR utilities
 ├── cluster/        # EKS, AKS (+ Auto Mode, virtual nodes, spot)
@@ -178,82 +176,93 @@ const glb = createGlobalLoadBalancer("prod", {
 
 ## API Reference
 
-### Network
+### Factory Functions (Primary API)
 
-#### `createAwsNetwork(name, config, options?)`
+The factory functions are the recommended way to use this library. They dispatch to the correct cloud-specific implementation based on the `cloud` parameter. Provider-specific options are passed via `providerOptions`.
 
-Creates a VPC with public/private subnets and NAT.
+#### `createNetwork(name, config)`
+
+Creates a VPC (AWS) or VNet (Azure) with subnets and NAT.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `name` | `string` | Resource name prefix |
-| `config.cloud` | `CloudArg` | `"aws"` or `{ provider: "aws", region: "..." }` |
-| `config.cidr` | `string` | VPC CIDR block (default: `"10.0.0.0/16"`) |
+| `config.cloud` | `CloudArg` | `"aws"`, `"azure"`, or `["aws", "azure"]` for multi-cloud |
+| `config.cidr` | `string` | CIDR block (auto-offset for multi-cloud) |
 | `config.natStrategy` | `NatStrategy` | `"managed"`, `"fck-nat"`, or `"none"` |
-| `options.fckNatInstanceType` | `string` | fck-nat instance type (default: `"t4g.nano"`) |
-| `options.availabilityZoneCount` | `number` | Number of AZs (default: `2`) |
+| `config.providerOptions` | `IProviderOptions` | Provider-specific options (see below) |
 
-Returns: `INetwork` — `{ vpcId, publicSubnetIds, privateSubnetIds, natGatewayId, nativeResource }`
+Returns: `INetwork` (single cloud) or `INetwork[]` (multi-cloud)
 
-#### `createAzureNetwork(name, config, options)`
+#### `createCluster(name, config, networks)`
 
-Creates a VNet with subnets, NSG, and optional NAT Gateway.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `config.cloud` | `CloudArg` | `"azure"` or `{ provider: "azure", region: "..." }` |
-| `config.cidr` | `string` | VNet address space |
-| `options.resourceGroupName` | `string` | Azure resource group (required) |
-| `options.subnetCount` | `number` | Subnet pairs per type (default: `2`) |
-
-Returns: `INetwork`
-
-### Cluster
-
-#### `createEksCluster(name, config, network, options?)`
-
-Creates an EKS cluster with managed node groups or Auto Mode.
+Creates an EKS (AWS) or AKS (Azure) cluster.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `config.nodePools` | `INodePool[]` | Node pool definitions |
 | `config.version` | `string` | Kubernetes version |
-| `options.autoMode` | `boolean` | Enable EKS Auto Mode (no explicit node groups) |
-| `options.endpointAccess` | `string` | `"public"`, `"private"`, or `"both"` |
+| `config.providerOptions` | `IProviderOptions` | Provider-specific options |
+| `networks` | `INetwork \| INetwork[]` | Network(s) — auto-matched by provider for multi-cloud |
 
-Returns: `ICluster` — `{ endpoint, kubeconfig, provider, nativeResource }`
+Returns: `ICluster` (single cloud) or `ICluster[]` (multi-cloud)
 
-#### `createAksCluster(name, config, network, options)`
+#### `createDns(name, config)`
 
-Creates an AKS cluster with system/user node pools.
+Creates a Route 53 (AWS) or Azure DNS zone.
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `config.virtualNodes` | `boolean` | Enable ACI virtual node |
-| `config.nodePools[].mode` | `string` | `"system"` or `"user"` |
-| `options.resourceGroupName` | `string` | Azure resource group (required) |
+Returns: `IDns` (single cloud) or `IDns[]` (multi-cloud)
 
-Returns: `ICluster`
+#### `createSecrets(name, config)`
 
-### DNS
-
-#### `createRoute53Dns(name, config)` / `createAzureDns(name, config, options)`
-
-Creates a DNS hosted zone with optional initial records.
-
-Returns: `IDns` — `{ zoneId, zoneName, nameServers, addRecord() }`
-
-### Secrets
-
-#### `createAwsSecrets(name, config)` / `createAzureSecrets(name, config, options)`
-
-Creates a secrets store with `putSecret()` and `getSecretRef()` methods.
+Creates an AWS Secrets Manager or Azure Key Vault store.
 
 ```typescript
-const secrets = createAwsSecrets("prod", { cloud: "aws" });
+const secrets = createSecrets("prod", { cloud: "aws" }) as ISecrets;
 secrets.putSecret("database", { host: "db.example.com", password: dbPassword });
 const pw = secrets.getSecretRef({ path: "database", key: "password" });
 ```
+
+Returns: `ISecrets` (single cloud) or `ISecrets[]` (multi-cloud)
+
+#### Provider Options
+
+```typescript
+providerOptions: {
+  aws: {
+    // Network
+    fckNatInstanceType: "t4g.nano",
+    availabilityZoneCount: 2,
+    // Cluster
+    autoMode: true,
+    addons: ["vpc-cni", "coredns"],
+    endpointAccess: "both",
+  },
+  azure: {
+    resourceGroupName: "my-rg",  // Required for all Azure resources
+    // Network
+    subnetCount: 2,
+    // Cluster
+    azureCni: true,
+    virtualNodes: false,
+    aadTenantId: "...",
+    dnsPrefix: "...",
+    // Secrets
+    tenantId: "...",             // Required for Key Vault
+    objectId: "...",
+    sku: "standard",
+  },
+}
+```
+
+### Direct Cloud Functions (Escape Hatch)
+
+For maximum control, you can still use cloud-specific functions directly:
+
+- `createAwsNetwork(name, config, options?)` / `createAzureNetwork(name, config, options)`
+- `createEksCluster(name, config, network, options?)` / `createAksCluster(name, config, network, options)`
+- `createRoute53Dns(name, config)` / `createAzureDns(name, config, options)`
+- `createAwsSecrets(name, config)` / `createAzureSecrets(name, config, options)`
 
 ### Platform Stack
 
@@ -285,7 +294,7 @@ Routes traffic across clusters using DNS-based health checks.
 ### CIDR Utilities
 
 ```typescript
-import { parseCidr, cidrsOverlap, buildCidrMap, autoOffsetCidrs } from "@reyemtech/pulumi-any-cloud";
+import { parseCidr, cidrsOverlap, buildCidrMap, autoOffsetCidrs } from "@reyemtech/nimbus";
 
 // Parse CIDR to numeric range
 parseCidr("10.0.0.0/16"); // { network, prefix, size, start, end }
@@ -304,7 +313,7 @@ buildCidrMap(["aws", "azure"], { aws: "10.0.0.0/16" });
 ### Cross-Cloud Validation
 
 ```typescript
-import { validateMultiCloud, validateResourceName, isFeatureSupported } from "@reyemtech/pulumi-any-cloud";
+import { validateMultiCloud, validateResourceName, isFeatureSupported } from "@reyemtech/nimbus";
 
 // Validate multi-cloud config (checks duplicates + naming)
 validateMultiCloud([
@@ -323,7 +332,7 @@ validateResourceName("MyCluster", "gcp"); // warns about uppercase
 ### Tags
 
 ```typescript
-import { normalizeTags, mergeWithRequiredTags } from "@reyemtech/pulumi-any-cloud";
+import { normalizeTags, mergeWithRequiredTags } from "@reyemtech/nimbus";
 
 // GCP label normalization (lowercase, no special chars, max 63)
 normalizeTags({ "Cost Center": "R&D" }, "gcp"); // { "cost-center": "r-d" }
@@ -332,7 +341,7 @@ normalizeTags({ "Cost Center": "R&D" }, "gcp"); // { "cost-center": "r-d" }
 mergeWithRequiredTags(
   { environment: "prod", client: "acme", costCenter: "eng" },
   { custom: "value" },
-); // { environment: "prod", client: "acme", costCenter: "eng", managedBy: "pulumi-any-cloud", custom: "value" }
+); // { environment: "prod", client: "acme", costCenter: "eng", managedBy: "nimbus", custom: "value" }
 ```
 
 ## Escape Hatches
@@ -342,7 +351,7 @@ Every resource exposes its cloud-native object via `nativeResource`:
 ```typescript
 import * as aws from "@pulumi/aws";
 
-const cluster = createEksCluster("prod", { ... }, network);
+const cluster = createCluster("prod", { cloud: "aws", ... }, network) as ICluster;
 const eksCluster = cluster.nativeResource as aws.eks.Cluster;
 eksCluster.arn.apply(arn => console.log("EKS ARN:", arn));
 ```
@@ -353,16 +362,13 @@ All factory functions accept flexible cloud arguments:
 
 ```typescript
 // String shorthand (uses DEFAULT_REGIONS)
-createAwsNetwork("prod", { cloud: "aws", ... });
+createNetwork("prod", { cloud: "aws", ... });
 
 // Explicit target
-createAwsNetwork("prod", { cloud: { provider: "aws", region: "eu-west-1" }, ... });
+createNetwork("prod", { cloud: { provider: "aws", region: "eu-west-1" }, ... });
 
 // Multi-cloud array
-createPlatformStack("prod", {
-  cluster: [awsCluster, azureCluster],
-  ...
-});
+createNetwork("prod", { cloud: ["aws", "azure"], ... });
 ```
 
 ## Error Handling

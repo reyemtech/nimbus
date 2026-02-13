@@ -1,6 +1,6 @@
-# BCDR Runbook — @reyemtech/pulumi-any-cloud
+# BCDR Runbook — @reyemtech/nimbus
 
-Business Continuity and Disaster Recovery procedures for multi-cloud deployments managed by pulumi-any-cloud.
+Business Continuity and Disaster Recovery procedures for multi-cloud deployments managed by nimbus.
 
 ## Recovery Objectives
 
@@ -87,7 +87,7 @@ pulumi up
 
 **Steps:**
 ```typescript
-import { buildCidrMap, validateNoOverlaps } from "@reyemtech/pulumi-any-cloud";
+import { buildCidrMap, validateNoOverlaps } from "@reyemtech/nimbus";
 
 // Validate current CIDRs
 validateNoOverlaps(["10.0.0.0/16", "10.0.0.0/16"]); // throws CidrError

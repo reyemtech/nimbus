@@ -1,5 +1,5 @@
 /**
- * Shared types, interfaces, and constants for @reyemtech/pulumi-any-cloud.
+ * Shared types, interfaces, and constants for @reyemtech/nimbus.
  *
  * @module types
  */

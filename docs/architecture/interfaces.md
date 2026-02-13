@@ -1,4 +1,4 @@
-# @reyemtech/pulumi-any-cloud — Interface Definitions
+# @reyemtech/nimbus — Interface Definitions
 
 **Date:** 2026-02-13
 **Status:** Design (REY-84)
@@ -699,7 +699,7 @@ interface IRequiredTags {
   readonly environment: string;
   readonly client: string;
   readonly costCenter: string;
-  readonly managedBy: "pulumi-any-cloud";
+  readonly managedBy: "nimbus";
 }
 ```
 
@@ -712,7 +712,7 @@ interface IRequiredTags {
 ### Simple Single-Cloud (ReyemTech on AWS)
 
 ```typescript
-import { createCluster, createNetwork, createDns, createPlatformStack } from "@reyemtech/pulumi-any-cloud";
+import { createCluster, createNetwork, createDns, createPlatformStack } from "@reyemtech/nimbus";
 
 const network = createNetwork("prod", {
   cloud: "aws",

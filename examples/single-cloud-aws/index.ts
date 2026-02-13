@@ -2,32 +2,37 @@
  * Single-cloud AWS example — deploys a full stack on AWS.
  *
  * Demonstrates: VPC + EKS + Route 53 + Secrets Manager + Platform Stack
+ * Uses the factory API for cloud-agnostic code.
  *
  * Usage:
  *   pulumi new typescript
- *   npm install @reyemtech/pulumi-any-cloud
+ *   npm install @reyemtech/nimbus
  *   # Copy this file to index.ts
  *   pulumi up
  */
 
 import {
-  createAwsNetwork,
-  createEksCluster,
-  createRoute53Dns,
-  createAwsSecrets,
+  createNetwork,
+  createCluster,
+  createDns,
+  createSecrets,
   createPlatformStack,
-} from "@reyemtech/pulumi-any-cloud";
+} from "@reyemtech/nimbus";
+import type { INetwork, ICluster, IDns, ISecrets } from "@reyemtech/nimbus";
 
 // 1. Network — VPC with fck-nat (~$3/mo vs $32/mo managed NAT)
-const network = createAwsNetwork("prod", {
+const network = createNetwork("prod", {
   cloud: "aws",
   cidr: "10.0.0.0/16",
   natStrategy: "fck-nat",
   tags: { environment: "production", client: "acme" },
-});
+  providerOptions: {
+    aws: { fckNatInstanceType: "t4g.nano", availabilityZoneCount: 2 },
+  },
+}) as INetwork;
 
 // 2. Cluster — EKS with Auto Mode
-const cluster = createEksCluster(
+const cluster = createCluster(
   "prod",
   {
     cloud: "aws",
@@ -43,27 +48,27 @@ const cluster = createEksCluster(
       },
     ],
     tags: { environment: "production", client: "acme" },
+    providerOptions: { aws: { autoMode: true } },
   },
   network,
-  { autoMode: true }
-);
+) as ICluster;
 
 // 3. DNS — Route 53 hosted zone
-const dns = createRoute53Dns("prod", {
+const dns = createDns("prod", {
   cloud: "aws",
   zoneName: "example.com",
   records: [
     { name: "app", type: "A", values: ["1.2.3.4"], ttl: 300 },
     { name: "www", type: "CNAME", values: ["app.example.com"], ttl: 300 },
   ],
-});
+}) as IDns;
 
 // 4. Secrets — AWS Secrets Manager
-const secrets = createAwsSecrets("prod", {
+const secrets = createSecrets("prod", {
   cloud: "aws",
   backend: "aws-secrets-manager",
   tags: { environment: "production" },
-});
+}) as ISecrets;
 
 secrets.putSecret("database", {
   host: "db.internal.example.com",

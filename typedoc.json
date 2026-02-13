@@ -2,7 +2,7 @@
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": ["src/index.ts"],
   "out": "docs/api",
-  "name": "@reyemtech/pulumi-any-cloud",
+  "name": "@reyemtech/nimbus",
   "readme": "README.md",
   "excludeExternals": true,
   "excludePrivate": true,

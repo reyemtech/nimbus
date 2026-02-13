@@ -1,5 +1,5 @@
 /**
- * Azure provider implementations for @reyemtech/pulumi-any-cloud.
+ * Azure provider implementations for @reyemtech/nimbus.
  *
  * @module azure
  */

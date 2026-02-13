@@ -1,5 +1,5 @@
 /**
- * Message queue interfaces for @reyemtech/pulumi-any-cloud.
+ * Message queue interfaces for @reyemtech/nimbus.
  *
  * Abstracts managed queues (SQS, Service Bus, Pub/Sub) and
  * operator-based queues (NATS, RabbitMQ, Kafka).

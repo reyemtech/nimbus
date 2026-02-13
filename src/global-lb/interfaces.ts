@@ -1,5 +1,5 @@
 /**
- * Global load balancer interfaces for @reyemtech/pulumi-any-cloud.
+ * Global load balancer interfaces for @reyemtech/nimbus.
  *
  * Multi-cloud traffic routing with health checks, supporting
  * active-active, active-passive, and geo-routing strategies.

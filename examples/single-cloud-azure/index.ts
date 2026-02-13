@@ -2,38 +2,45 @@
  * Single-cloud Azure example — deploys a full stack on Azure.
  *
  * Demonstrates: VNet + AKS + Azure DNS + Key Vault + Platform Stack
+ * Uses the factory API for cloud-agnostic code.
  *
  * Usage:
  *   pulumi new typescript
- *   npm install @reyemtech/pulumi-any-cloud
+ *   npm install @reyemtech/nimbus
  *   # Copy this file to index.ts
  *   pulumi up
  */
 
 import {
-  createAzureNetwork,
-  createAksCluster,
-  createAzureDns,
-  createAzureSecrets,
+  createNetwork,
+  createCluster,
+  createDns,
+  createSecrets,
   createPlatformStack,
-} from "@reyemtech/pulumi-any-cloud";
+} from "@reyemtech/nimbus";
+import type { INetwork, ICluster, IDns, ISecrets } from "@reyemtech/nimbus";
 
 const resourceGroupName = "rg-prod-canadacentral";
 
-// 1. Network — VNet with NAT Gateway
-const network = createAzureNetwork(
-  "prod",
-  {
-    cloud: "azure",
-    cidr: "10.1.0.0/16",
-    natStrategy: "managed",
-    tags: { environment: "production", client: "acme" },
+// Shared Azure options
+const azureOptions = {
+  azure: {
+    resourceGroupName,
+    tenantId: "your-tenant-id",
   },
-  { resourceGroupName }
-);
+};
+
+// 1. Network — VNet with NAT Gateway
+const network = createNetwork("prod", {
+  cloud: "azure",
+  cidr: "10.1.0.0/16",
+  natStrategy: "managed",
+  tags: { environment: "production", client: "acme" },
+  providerOptions: azureOptions,
+}) as INetwork;
 
 // 2. Cluster — AKS with system + user node pools
-const cluster = createAksCluster(
+const cluster = createCluster(
   "prod",
   {
     cloud: "azure",
@@ -57,35 +64,29 @@ const cluster = createAksCluster(
     ],
     virtualNodes: true,
     tags: { environment: "production", client: "acme" },
+    providerOptions: azureOptions,
   },
   network,
-  { resourceGroupName }
-);
+) as ICluster;
 
 // 3. DNS — Azure DNS Zone
-const dns = createAzureDns(
-  "prod",
-  {
-    cloud: "azure",
-    zoneName: "example.com",
-    records: [
-      { name: "app", type: "A", values: ["1.2.3.4"], ttl: 300 },
-      { name: "www", type: "CNAME", values: ["app.example.com"], ttl: 300 },
-    ],
-  },
-  { resourceGroupName }
-);
+const dns = createDns("prod", {
+  cloud: "azure",
+  zoneName: "example.com",
+  records: [
+    { name: "app", type: "A", values: ["1.2.3.4"], ttl: 300 },
+    { name: "www", type: "CNAME", values: ["app.example.com"], ttl: 300 },
+  ],
+  providerOptions: azureOptions,
+}) as IDns;
 
 // 4. Secrets — Azure Key Vault
-const secrets = createAzureSecrets(
-  "prod",
-  {
-    cloud: "azure",
-    backend: "azure-key-vault",
-    tags: { environment: "production" },
-  },
-  { resourceGroupName, tenantId: "your-tenant-id" }
-);
+const secrets = createSecrets("prod", {
+  cloud: "azure",
+  backend: "azure-key-vault",
+  tags: { environment: "production" },
+  providerOptions: azureOptions,
+}) as ISecrets;
 
 secrets.putSecret("database", {
   host: "db.internal.example.com",

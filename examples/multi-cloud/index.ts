@@ -1,49 +1,54 @@
 /**
  * Multi-cloud example — AWS + Azure active-active deployment.
  *
- * Demonstrates: CIDR planning, dual-cloud provisioning, Global Load Balancer
+ * Demonstrates: Factory API, auto-CIDR, dual-cloud provisioning, Global Load Balancer
+ * With the factory API, switching clouds = change the `cloud` array.
  *
  * Usage:
  *   pulumi new typescript
- *   npm install @reyemtech/pulumi-any-cloud
+ *   npm install @reyemtech/nimbus
  *   # Copy this file to index.ts
  *   pulumi up
  */
 
 import {
-  createAwsNetwork,
-  createEksCluster,
-  createAzureNetwork,
-  createAksCluster,
-  createRoute53Dns,
+  createNetwork,
+  createCluster,
+  createDns,
   createPlatformStack,
   createGlobalLoadBalancer,
-  buildCidrMap,
-  validateNoOverlaps,
-} from "@reyemtech/pulumi-any-cloud";
+} from "@reyemtech/nimbus";
+import type { INetwork, ICluster, IDns } from "@reyemtech/nimbus";
 
 const resourceGroupName = "rg-prod-canadacentral";
 
-// ── CIDR Planning ──────────────────────────────────────────────────
-// Auto-generate non-overlapping CIDRs for VPC peering / mesh
-const cidrs = buildCidrMap(["aws", "azure"]);
-// => { aws: "10.0.0.0/16", azure: "10.1.0.0/16" }
+// ── Shared provider options ─────────────────────────────────────────
+const providerOptions = {
+  aws: { autoMode: true },
+  azure: { resourceGroupName },
+};
 
-// Validate no overlaps (throws CidrError if any conflict)
-validateNoOverlaps(Object.values(cidrs));
+// ── Networks ────────────────────────────────────────────────────────
+// Factory auto-offsets CIDRs: AWS gets 10.0.0.0/16, Azure gets 10.1.0.0/16
+const networks = createNetwork("prod", {
+  cloud: [
+    { provider: "aws", region: "us-east-1" },
+    { provider: "azure", region: "canadacentral" },
+  ],
+  cidr: "10.0.0.0/16",
+  natStrategy: "fck-nat", // AWS uses fck-nat, Azure falls back to managed
+  providerOptions,
+}) as INetwork[];
 
-// ── AWS ────────────────────────────────────────────────────────────
-const awsNetwork = createAwsNetwork("prod", {
-  cloud: { provider: "aws", region: "us-east-1" },
-  cidr: cidrs["aws"],
-  natStrategy: "fck-nat",
-  tags: { environment: "production" },
-});
-
-const awsCluster = createEksCluster(
+// ── Clusters ────────────────────────────────────────────────────────
+// Networks are auto-matched by provider
+const clusters = createCluster(
   "prod",
   {
-    cloud: { provider: "aws", region: "us-east-1" },
+    cloud: [
+      { provider: "aws", region: "us-east-1" },
+      { provider: "azure", region: "canadacentral" },
+    ],
     version: "1.32",
     nodePools: [
       { name: "system", instanceType: "t4g.small", minNodes: 2, maxNodes: 3 },
@@ -55,60 +60,21 @@ const awsCluster = createEksCluster(
         spot: true,
       },
     ],
+    providerOptions,
   },
-  awsNetwork,
-  { autoMode: true }
-);
+  networks,
+) as ICluster[];
 
-// ── Azure ──────────────────────────────────────────────────────────
-const azureNetwork = createAzureNetwork(
-  "prod",
-  {
-    cloud: { provider: "azure", region: "canadacentral" },
-    cidr: cidrs["azure"],
-    natStrategy: "managed",
-    tags: { environment: "production" },
-  },
-  { resourceGroupName }
-);
-
-const azureCluster = createAksCluster(
-  "prod",
-  {
-    cloud: { provider: "azure", region: "canadacentral" },
-    version: "1.32",
-    nodePools: [
-      {
-        name: "system",
-        instanceType: "Standard_D2s_v5",
-        minNodes: 2,
-        maxNodes: 3,
-        mode: "system",
-      },
-      {
-        name: "workers",
-        instanceType: "Standard_D4s_v5",
-        minNodes: 2,
-        maxNodes: 8,
-        spot: true,
-        mode: "user",
-      },
-    ],
-  },
-  azureNetwork,
-  { resourceGroupName }
-);
-
-// ── DNS ────────────────────────────────────────────────────────────
-const dns = createRoute53Dns("prod", {
+// ── DNS ─────────────────────────────────────────────────────────────
+const dns = createDns("prod", {
   cloud: "aws",
   zoneName: "example.com",
-});
+}) as IDns;
 
-// ── Platform Stack ─────────────────────────────────────────────────
+// ── Platform Stack ──────────────────────────────────────────────────
 // Deploy to both clusters
 createPlatformStack("prod", {
-  cluster: [awsCluster, azureCluster],
+  cluster: clusters,
   domain: "example.com",
   externalDns: {
     dnsProvider: "route53",
@@ -116,10 +82,10 @@ createPlatformStack("prod", {
   },
 });
 
-// ── Global Load Balancer ───────────────────────────────────────────
+// ── Global Load Balancer ────────────────────────────────────────────
 const glb = createGlobalLoadBalancer("prod", {
   strategy: "active-active",
-  clusters: [awsCluster, azureCluster],
+  clusters,
   domain: "app.example.com",
   healthCheck: {
     path: "/health",
@@ -132,10 +98,10 @@ const glb = createGlobalLoadBalancer("prod", {
 });
 
 // Exports
-export const awsVpcId = awsNetwork.vpcId;
-export const azureVnetId = azureNetwork.vpcId;
-export const awsEndpoint = awsCluster.endpoint;
-export const azureEndpoint = azureCluster.endpoint;
+export const awsVpcId = networks[0]?.vpcId;
+export const azureVnetId = networks[1]?.vpcId;
+export const awsEndpoint = clusters[0]?.endpoint;
+export const azureEndpoint = clusters[1]?.endpoint;
 export const glbEndpoint = glb.endpoint;
 export const glbStrategy = glb.strategy;
 export const dnsZoneId = dns.zoneId;

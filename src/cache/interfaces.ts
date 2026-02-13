@@ -1,5 +1,5 @@
 /**
- * Cache interfaces for @reyemtech/pulumi-any-cloud.
+ * Cache interfaces for @reyemtech/nimbus.
  *
  * Abstracts Redis/Memcached/Valkey provisioning — managed services
  * (ElastiCache, Azure Cache, Memorystore) or Helm-based (Bitnami Redis).

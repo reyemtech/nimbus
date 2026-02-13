@@ -1,5 +1,5 @@
 /**
- * Database interfaces for @reyemtech/pulumi-any-cloud.
+ * Database interfaces for @reyemtech/nimbus.
  *
  * Abstracts database provisioning — managed services (RDS/Aurora,
  * Azure Database, Cloud SQL) or Kubernetes operators (PXC, CloudNativePG,

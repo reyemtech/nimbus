@@ -41,7 +41,7 @@ export function createAwsSecrets(name: string, config: ISecretsConfig): ISecrets
   const store = new aws.ssm.Parameter(`${name}-secrets-store`, {
     name: `/${name}/secrets-store`,
     type: aws.ssm.ParameterType.String,
-    value: "managed-by-pulumi-any-cloud",
+    value: "managed-by-nimbus",
     tags: { ...tags, Name: `${name}-secrets-store` },
   });
 

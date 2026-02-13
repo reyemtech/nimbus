@@ -1,5 +1,5 @@
 /**
- * Cluster interfaces for @reyemtech/pulumi-any-cloud.
+ * Cluster interfaces for @reyemtech/nimbus.
  *
  * Abstracts Kubernetes cluster provisioning across EKS, AKS, and GKE.
  * Supports EKS Auto Mode, AKS virtual nodes, spot instances, and

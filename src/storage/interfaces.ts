@@ -1,5 +1,5 @@
 /**
- * Object storage interfaces for @reyemtech/pulumi-any-cloud.
+ * Object storage interfaces for @reyemtech/nimbus.
  *
  * Abstracts S3 (AWS), Blob Storage (Azure), and GCS (GCP)
  * bucket management with versioning, encryption, and lifecycle policies.

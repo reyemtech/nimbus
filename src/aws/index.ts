@@ -1,5 +1,5 @@
 /**
- * AWS provider implementations for @reyemtech/pulumi-any-cloud.
+ * AWS provider implementations for @reyemtech/nimbus.
  *
  * @module aws
  */

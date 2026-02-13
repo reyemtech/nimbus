@@ -1,5 +1,5 @@
 /**
- * DNS interfaces for @reyemtech/pulumi-any-cloud.
+ * DNS interfaces for @reyemtech/nimbus.
  *
  * Abstracts DNS zone management across Route 53 (AWS),
  * Azure DNS Zone, and Cloud DNS (GCP).

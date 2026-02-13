@@ -8,7 +8,7 @@
 ## Package Structure
 
 ```
-@reyemtech/pulumi-any-cloud
+@reyemtech/nimbus
 ├── src/
 │   ├── types/                    # Shared types, interfaces, constants
 │   │   ├── cloud-target.ts       # CloudProvider, CloudTarget, CloudArg, ResolvedCloudTarget
@@ -252,7 +252,7 @@ graph TD
 ## Error Handling Strategy
 
 ```typescript
-/** Base error for all pulumi-any-cloud errors */
+/** Base error for all nimbus errors */
 class AnyCloudError extends Error {
   readonly code: string;
   constructor(message: string, code: string) { ... }

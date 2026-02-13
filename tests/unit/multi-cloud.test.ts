@@ -189,7 +189,7 @@ describe("cross-cloud tag normalization", () => {
     const required = { environment: "prod", client: "acme", costCenter: "eng" };
     const merged = mergeWithRequiredTags(required, { custom: "value" });
 
-    expect(merged.managedBy).toBe("pulumi-any-cloud");
+    expect(merged.managedBy).toBe("nimbus");
     expect(merged.environment).toBe("prod");
     expect(merged.custom).toBe("value");
   });

@@ -1,5 +1,5 @@
 /**
- * Cloud target types for @reyemtech/pulumi-any-cloud.
+ * Cloud target types for @reyemtech/nimbus.
  *
  * Defines how users specify which cloud provider(s) and region(s)
  * to deploy to. Supports string shorthand, explicit targets,

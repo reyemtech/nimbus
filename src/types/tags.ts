@@ -1,5 +1,5 @@
 /**
- * Cross-cloud tagging strategy for @reyemtech/pulumi-any-cloud.
+ * Cross-cloud tagging strategy for @reyemtech/nimbus.
  *
  * Normalizes tags/labels across AWS, Azure, and GCP.
  * GCP has strict label requirements: lowercase, no special chars, max 63 chars.
@@ -14,7 +14,7 @@ export interface IRequiredTags {
   readonly environment: string;
   readonly client: string;
   readonly costCenter: string;
-  readonly managedBy: "pulumi-any-cloud";
+  readonly managedBy: "nimbus";
 }
 
 /** Maximum label key/value length for GCP. */
@@ -56,7 +56,7 @@ export function normalizeTags(
     const normalizedValue = normalizeGcpLabelValue(value);
     if (normalizedKey in normalized) {
       console.warn(
-        `[pulumi-any-cloud] GCP label key collision: "${key}" normalizes to "${normalizedKey}" which already exists. Skipping.`
+        `[nimbus] GCP label key collision: "${key}" normalizes to "${normalizedKey}" which already exists. Skipping.`
       );
       continue;
     }
@@ -129,6 +129,6 @@ export function mergeWithRequiredTags(
     environment: required.environment,
     client: required.client,
     costCenter: required.costCenter,
-    managedBy: "pulumi-any-cloud",
+    managedBy: "nimbus",
   };
 }
