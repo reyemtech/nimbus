@@ -4,31 +4,33 @@ How to evolve a `@reyemtech/nimbus` deployment from single-cloud to multi-cloud 
 
 ## Phase 1: Single Cloud (Starting Point)
 
-You have a standard single-cloud deployment:
+You have a standard single-cloud deployment using the factory functions:
 
 ```typescript
 import {
-  createAwsNetwork,
-  createEksCluster,
-  createRoute53Dns,
+  createNetwork,
+  createCluster,
+  createDns,
   createPlatformStack,
 } from "@reyemtech/nimbus";
+import type { INetwork, ICluster, IDns } from "@reyemtech/nimbus";
 
-const network = createAwsNetwork("prod", {
+const network = await createNetwork("prod", {
   cloud: "aws",
   cidr: "10.0.0.0/16",
   natStrategy: "fck-nat",
-});
+}) as INetwork;
 
-const cluster = createEksCluster("prod", {
+const cluster = await createCluster("prod", {
   cloud: "aws",
   nodePools: [
     { name: "system", instanceType: "t4g.small", minNodes: 2, maxNodes: 3 },
     { name: "workers", instanceType: "c6a.large", minNodes: 2, maxNodes: 8, spot: true },
   ],
-}, network, { autoMode: true });
+  providerOptions: { aws: { autoMode: true } },
+}, network) as ICluster;
 
-const dns = createRoute53Dns("prod", { cloud: "aws", zoneName: "example.com" });
+const dns = await createDns("prod", { cloud: "aws", zoneName: "example.com" }) as IDns;
 
 createPlatformStack("prod", {
   cluster,
@@ -36,6 +38,8 @@ createPlatformStack("prod", {
   externalDns: { dnsProvider: "route53", domainFilters: ["example.com"] },
 });
 ```
+
+> **Note:** All factory functions are **async** and use dynamic imports — only the provider SDK you target is loaded at runtime. If you don't have `@pulumi/aws` installed, the import error surfaces when you call a factory with `cloud: "aws"`, not at import time. Install providers with `npx @reyemtech/nimbus install aws`.
 
 ## Phase 2: Add CIDR Planning
 
@@ -48,44 +52,44 @@ Before adding a second cloud, set up CIDR planning so VPCs don't overlap (requir
 +const cidrs = buildCidrMap(["aws", "azure"]);
 +// => { aws: "10.0.0.0/16", azure: "10.1.0.0/16" }
 
- const network = createAwsNetwork("prod", {
+ const network = await createNetwork("prod", {
    cloud: "aws",
 -  cidr: "10.0.0.0/16",
 +  cidr: cidrs["aws"],  // "10.0.0.0/16"
    natStrategy: "fck-nat",
- });
+- });
++ }) as INetwork;
 ```
 
 This is a no-op change if your existing CIDR was already `10.0.0.0/16`. The benefit: `buildCidrMap` validates no overlaps and reserves the Azure range.
 
 ## Phase 3: Add Second Cloud
 
-Add the Azure infrastructure alongside AWS:
+Add the Azure infrastructure alongside AWS using the same factory functions — just change the `cloud` target:
 
 ```diff
-+import {
-+  createAzureNetwork,
-+  createAksCluster,
-+} from "@reyemtech/nimbus";
++const providerOptions = { azure: { resourceGroupName: "rg-prod-canadacentral" } };
 +
-+const resourceGroupName = "rg-prod-canadacentral";
-+
-+// Azure network
-+const azureNetwork = createAzureNetwork("prod", {
++// Azure network (same factory, different cloud target)
++const azureNetwork = await createNetwork("prod-azure", {
 +  cloud: { provider: "azure", region: "canadacentral" },
 +  cidr: cidrs["azure"],  // "10.1.0.0/16"
 +  natStrategy: "managed",
-+}, { resourceGroupName });
++  providerOptions,
++}) as INetwork;
 +
 +// Azure cluster
-+const azureCluster = createAksCluster("prod", {
++const azureCluster = await createCluster("prod-azure", {
 +  cloud: { provider: "azure", region: "canadacentral" },
 +  nodePools: [
 +    { name: "system", instanceType: "Standard_D2s_v5", minNodes: 2, maxNodes: 3, mode: "system" },
 +    { name: "workers", instanceType: "Standard_D4s_v5", minNodes: 2, maxNodes: 8, spot: true, mode: "user" },
 +  ],
-+}, azureNetwork, { resourceGroupName });
++  providerOptions,
++}, azureNetwork) as ICluster;
 ```
+
+> **Tip:** You can also use subpath imports for direct access: `import { createAzureNetwork } from "@reyemtech/nimbus/azure"`
 
 At this point you have two independent clusters. Run `pulumi up` to provision Azure resources.
 

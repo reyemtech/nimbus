@@ -15,12 +15,36 @@
         "types": "./dist/cjs/index.d.ts",
         "default": "./dist/cjs/index.js"
       }
+    },
+    "./aws": {
+      "import": {
+        "types": "./dist/esm/aws/index.d.ts",
+        "default": "./dist/esm/aws/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/aws/index.d.ts",
+        "default": "./dist/cjs/aws/index.js"
+      }
+    },
+    "./azure": {
+      "import": {
+        "types": "./dist/esm/azure/index.d.ts",
+        "default": "./dist/esm/azure/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/azure/index.d.ts",
+        "default": "./dist/cjs/azure/index.js"
+      }
     }
+  },
+  "bin": {
+    "nimbus": "./dist/cjs/cli.js"
   },
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "bin"
   ],
   "scripts": {
     "build": "npm run build:esm && npm run build:cjs",
@@ -62,7 +86,15 @@
     "node": ">=20"
   },
   "peerDependencies": {
-    "@pulumi/pulumi": ">=3.0.0"
+    "@pulumi/pulumi": ">=3.0.0",
+    "@pulumi/aws": ">=6.0.0",
+    "@pulumi/azure-native": ">=2.0.0",
+    "@pulumi/kubernetes": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@pulumi/aws": { "optional": true },
+    "@pulumi/azure-native": { "optional": true },
+    "@pulumi/kubernetes": { "optional": true }
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

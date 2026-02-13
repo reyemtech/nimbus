@@ -93,6 +93,15 @@ export type { ILifecycleRule, ICorsRule, IObjectStorageConfig, IObjectStorage } 
 // Queue
 export type { QueueEngine, QueueMode, QueueType, IQueueConfig, IQueue } from "./queue";
 
+// State Backend
+export type {
+  StateBackendType,
+  IReplicationConfig,
+  IStateLockConfig,
+  IStateBackendConfig,
+  IStateBackend,
+} from "./state";
+
 // Platform
 export {
   type DnsProvider,
@@ -121,35 +130,15 @@ export {
   createCluster,
   createDns,
   createSecrets,
+  createStateBackend,
   type ICreateNetworkConfig,
   type ICreateClusterConfig,
   type ICreateDnsConfig,
   type ICreateSecretsConfig,
+  type ICreateStateBackendConfig,
   type IProviderOptions,
   type IAwsProviderOptions,
   type IAzureProviderOptions,
   extractProvider,
   isMultiCloud,
 } from "./factories";
-
-// AWS Provider (direct access)
-export {
-  createAwsNetwork,
-  type IAwsNetworkOptions,
-  createEksCluster,
-  type IEksOptions,
-  createRoute53Dns,
-  createAwsSecrets,
-} from "./aws";
-
-// Azure Provider (direct access)
-export {
-  createAzureNetwork,
-  type IAzureNetworkOptions,
-  createAksCluster,
-  type IAksOptions,
-  createAzureDns,
-  type IAzureDnsOptions,
-  createAzureSecrets,
-  type IAzureSecretsOptions,
-} from "./azure";

@@ -22,6 +22,10 @@ export interface IAwsProviderOptions {
   readonly addons?: ReadonlyArray<string>;
   /** Endpoint access: "public", "private", or "both". Default: "both". */
   readonly endpointAccess?: "public" | "private" | "both";
+  /** KMS key ARN for state backend encryption. Uses AES256 if not provided. */
+  readonly stateKmsKeyArn?: string;
+  /** Allow Pulumi to destroy the state bucket (for dev/test). Default: false. */
+  readonly stateForceDestroy?: boolean;
 }
 
 /** Azure-specific options passed through factory functions. */

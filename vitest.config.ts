@@ -14,6 +14,7 @@ export default defineConfig({
         "src/azure/**",
         "src/global-lb/glb.ts",
         "src/platform/stack.ts",
+        "src/cli.ts",
       ],
       thresholds: {
         statements: 80,

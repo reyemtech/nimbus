@@ -16,89 +16,58 @@
 │   │   ├── errors.ts             # Custom error classes
 │   │   └── index.ts              # Barrel export
 │   │
-│   ├── cluster/                  # ICluster implementations
-│   │   ├── aws/
-│   │   │   └── eks-cluster.ts    # EksCluster (EKS + Auto Mode)
-│   │   ├── azure/
-│   │   │   └── aks-cluster.ts    # AksCluster (AKS + virtual nodes)
-│   │   ├── gcp/
-│   │   │   └── gke-cluster.ts    # GkeCluster (future)
-│   │   ├── factory.ts            # createCluster() factory + overloads
+│   ├── factories/                # Cloud-agnostic factory functions (async + dynamic imports)
+│   │   ├── network.ts            # createNetwork() → dispatches to AWS/Azure
+│   │   ├── cluster.ts            # createCluster() → dispatches to EKS/AKS
+│   │   ├── dns.ts                # createDns() → dispatches to Route 53/Azure DNS
+│   │   ├── secrets.ts            # createSecrets() → dispatches to Secrets Manager/Key Vault
+│   │   ├── state.ts              # createStateBackend() → dispatches to S3/Azure Blob
+│   │   ├── types.ts              # IProviderOptions, IAwsProviderOptions, IAzureProviderOptions
+│   │   └── index.ts              # Barrel export
+│   │
+│   ├── aws/                      # AWS implementations (loaded dynamically)
+│   │   ├── network.ts            # VPC + subnets + NAT (managed/fck-nat)
+│   │   ├── eks-cluster.ts        # EKS + Auto Mode
+│   │   ├── dns.ts                # Route 53 hosted zone
+│   │   ├── secrets.ts            # AWS Secrets Manager
+│   │   ├── state.ts              # S3 + DynamoDB locking + cross-region replication
+│   │   └── index.ts              # Barrel export
+│   │
+│   ├── azure/                    # Azure implementations (loaded dynamically)
+│   │   ├── network.ts            # VNet + subnets + NAT Gateway + NSG
+│   │   ├── aks-cluster.ts        # AKS + virtual nodes
+│   │   ├── dns.ts                # Azure DNS Zone
+│   │   ├── secrets.ts            # Azure Key Vault
+│   │   ├── state.ts              # StorageAccount + BlobContainer + GRS
+│   │   └── index.ts              # Barrel export
+│   │
+│   ├── cluster/                  # ICluster interface definitions
 │   │   └── index.ts
 │   │
-│   ├── network/                  # INetwork implementations
-│   │   ├── aws/
-│   │   │   └── aws-network.ts    # VPC + subnets + NAT (managed/fck-nat)
-│   │   ├── azure/
-│   │   │   └── azure-network.ts  # VNet + subnets + NAT Gateway + NSG
-│   │   ├── gcp/
-│   │   │   └── gcp-network.ts    # VPC + subnets (future)
-│   │   ├── cidr-utils.ts         # validateCidr(), generateCidrMap()
-│   │   ├── factory.ts            # createNetwork()
+│   ├── network/                  # INetwork interface + CIDR utilities
+│   │   ├── cidr-utils.ts         # validateCidr(), buildCidrMap(), autoOffsetCidrs()
 │   │   └── index.ts
 │   │
-│   ├── dns/                      # IDns implementations
-│   │   ├── aws/
-│   │   │   └── route53-dns.ts    # Route 53 hosted zone
-│   │   ├── azure/
-│   │   │   └── azure-dns.ts      # Azure DNS Zone
-│   │   ├── gcp/
-│   │   │   └── cloud-dns.ts      # Cloud DNS (future)
-│   │   ├── factory.ts            # createDns()
+│   ├── dns/                      # IDns interface definitions
 │   │   └── index.ts
 │   │
-│   ├── secrets/                  # ISecrets implementations
-│   │   ├── aws/
-│   │   │   └── aws-secrets.ts    # AWS Secrets Manager
-│   │   ├── azure/
-│   │   │   └── azure-secrets.ts  # Azure Key Vault
-│   │   ├── gcp/
-│   │   │   └── gcp-secrets.ts    # GCP Secret Manager (future)
-│   │   ├── vault/
-│   │   │   └── vault-secrets.ts  # HashiCorp Vault (in-cluster)
-│   │   ├── factory.ts            # createSecrets()
+│   ├── secrets/                  # ISecrets interface definitions
 │   │   └── index.ts
 │   │
-│   ├── database/                 # IDatabase implementations
-│   │   ├── aws/
-│   │   │   └── rds-database.ts   # RDS/Aurora
-│   │   ├── azure/
-│   │   │   └── azure-database.ts # Azure Database flexible server
-│   │   ├── operators/
-│   │   │   ├── pxc-database.ts   # Percona XtraDB Cluster
-│   │   │   ├── cnpg-database.ts  # CloudNativePG
-│   │   │   └── mariadb-database.ts # MariaDB Operator
-│   │   ├── factory.ts            # createDatabase()
+│   ├── state/                    # IStateBackend interface definitions
+│   │   ├── interfaces.ts         # StateBackendType, IStateBackendConfig, IStateBackend
+│   │   └── index.ts              # Barrel export
+│   │
+│   ├── database/                 # IDatabase interface definitions (future)
 │   │   └── index.ts
 │   │
-│   ├── cache/                    # ICache implementations
-│   │   ├── aws/
-│   │   │   └── elasticache.ts    # ElastiCache
-│   │   ├── azure/
-│   │   │   └── azure-cache.ts    # Azure Cache for Redis
-│   │   ├── helm/
-│   │   │   └── redis-helm.ts     # Bitnami Redis Helm chart
-│   │   ├── factory.ts            # createCache()
+│   ├── cache/                    # ICache interface definitions (future)
 │   │   └── index.ts
 │   │
-│   ├── storage/                  # IObjectStorage implementations
-│   │   ├── aws/
-│   │   │   └── s3-storage.ts     # S3
-│   │   ├── azure/
-│   │   │   └── blob-storage.ts   # Azure Blob
-│   │   ├── gcp/
-│   │   │   └── gcs-storage.ts    # GCS (future)
-│   │   ├── factory.ts            # createObjectStorage()
+│   ├── storage/                  # IObjectStorage interface definitions (future)
 │   │   └── index.ts
 │   │
-│   ├── queue/                    # IQueue implementations
-│   │   ├── aws/
-│   │   │   └── sqs-queue.ts      # SQS
-│   │   ├── azure/
-│   │   │   └── servicebus-queue.ts # Service Bus
-│   │   ├── operators/
-│   │   │   └── nats-queue.ts     # NATS (in-cluster)
-│   │   ├── factory.ts            # createQueue()
+│   ├── queue/                    # IQueue interface definitions (future)
 │   │   └── index.ts
 │   │
 │   ├── platform/                 # IPlatformStack
@@ -121,20 +90,21 @@
 │   │   ├── factory.ts            # createGlobalLoadBalancer()
 │   │   └── index.ts
 │   │
-│   ├── state/                    # State backend
-│   │   ├── factory.ts            # createStateBackend()
-│   │   └── index.ts
-│   │
-│   ├── backup/                   # Backup abstraction
+│   ├── backup/                   # Backup abstraction (future)
 │   │   ├── velero.ts             # Velero Helm + config
 │   │   ├── factory.ts            # createBackupPolicy()
 │   │   └── index.ts
+│   │
+│   ├── utils/                    # Shared utilities
+│   │   ├── provider-loader.ts    # Dynamic provider import with helpful error messages
+│   │   └── index.ts              # Barrel export
 │   │
 │   ├── config/                   # Pulumi config file helpers
 │   │   ├── config-reader.ts      # Read any-cloud config from Pulumi.<stack>.yaml
 │   │   └── index.ts
 │   │
-│   └── index.ts                  # Package root barrel export
+│   ├── cli.ts                    # CLI helper (npx @reyemtech/nimbus install/check)
+│   └── index.ts                  # Package root barrel export (types + factories only)
 │
 ├── tests/
 │   ├── unit/
@@ -206,19 +176,34 @@ graph TD
 ### Dependency Rules
 
 1. **types/** — no dependencies (leaf)
-2. **network/** — depends on types/
-3. **dns/** — depends on types/
-4. **secrets/** — depends on types/
-5. **cluster/** — depends on types/, network/ (optional), dns/ (for node registration)
-6. **database/** — depends on types/, cluster/ (for operator mode), secrets/
-7. **cache/** — depends on types/, cluster/ (for Helm mode), secrets/
-8. **storage/** — depends on types/
-9. **queue/** — depends on types/, cluster/ (for operator mode)
-10. **platform/** — depends on types/, cluster/, dns/, secrets/
-11. **global-lb/** — depends on types/, cluster/, dns/
-12. **backup/** — depends on types/, cluster/, storage/
-13. **state/** — depends on types/, storage/
-14. **config/** — depends on types/ (reads Pulumi config)
+2. **utils/** — no dependencies (leaf)
+3. **network/** — depends on types/
+4. **dns/** — depends on types/
+5. **secrets/** — depends on types/
+6. **state/** — depends on types/ (S3/Azure Blob state storage)
+7. **cluster/** — depends on types/, network/ (optional), dns/ (for node registration)
+8. **database/** — depends on types/, cluster/ (for operator mode), secrets/
+9. **cache/** — depends on types/, cluster/ (for Helm mode), secrets/
+10. **storage/** — depends on types/
+11. **queue/** — depends on types/, cluster/ (for operator mode)
+12. **platform/** — depends on types/, cluster/, dns/, secrets/
+13. **global-lb/** — depends on types/, cluster/, dns/
+14. **backup/** — depends on types/, cluster/, storage/
+15. **factories/** — depends on types/, aws/, azure/ (via dynamic imports)
+16. **config/** — depends on types/ (reads Pulumi config)
+17. **cli.ts** — standalone (uses child_process + dynamic imports)
+
+### Dynamic Provider Loading
+
+The `factories/` directory uses async dynamic imports (`await import("../aws/index.js")`) so that only the targeted cloud provider SDK loads at runtime. The `utils/provider-loader.ts` helper wraps `import()` with clear error messages when a provider SDK is missing:
+
+```
+Cloud provider "aws" requires: @pulumi/aws
+Run: npm install @pulumi/aws
+Or:  npx @reyemtech/nimbus install aws
+```
+
+The root `src/index.ts` only re-exports **types** and **factory functions** — no static imports of `./aws` or `./azure`. Users who want direct provider access can use subpath imports: `import { createAwsNetwork } from "@reyemtech/nimbus/aws"`.
 
 ---
 

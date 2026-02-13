@@ -11,8 +11,6 @@ import type { ICluster, IClusterConfig } from "../cluster";
 import type { INetwork } from "../network";
 import { resolveCloudTarget, UnsupportedFeatureError } from "../types";
 import type { ResolvedCloudTarget } from "../types";
-import { createEksCluster } from "../aws";
-import { createAksCluster } from "../azure";
 import type { IProviderOptions } from "./types";
 import { isMultiCloud } from "./types";
 
@@ -32,14 +30,14 @@ export type ICreateClusterConfig = IClusterConfig & {
  * @example
  * ```typescript
  * // Single cloud
- * const cluster = createCluster("prod", {
+ * const cluster = await createCluster("prod", {
  *   cloud: "aws",
  *   nodePools: [{ name: "system", instanceType: "t4g.small", minNodes: 2, maxNodes: 3 }],
  *   providerOptions: { aws: { autoMode: true } },
  * }, network);
  *
  * // Multi-cloud
- * const clusters = createCluster("prod", {
+ * const clusters = await createCluster("prod", {
  *   cloud: ["aws", "azure"],
  *   nodePools: [...],
  *   providerOptions: {
@@ -49,11 +47,11 @@ export type ICreateClusterConfig = IClusterConfig & {
  * }, networks);
  * ```
  */
-export function createCluster(
+export async function createCluster(
   name: string,
   config: ICreateClusterConfig,
   networks: INetwork | INetwork[]
-): ICluster | ICluster[] {
+): Promise<ICluster | ICluster[]> {
   if (!isMultiCloud(config.cloud)) {
     const target = resolveCloudTarget(config.cloud);
     const network = Array.isArray(networks) ? findNetworkForProvider(networks, target) : networks;
@@ -63,30 +61,34 @@ export function createCluster(
   const targets = resolveCloudTarget(config.cloud);
   const networkArray = Array.isArray(networks) ? networks : [networks];
 
-  return targets.map((target) => {
-    const network = findNetworkForProvider(networkArray, target);
-    return dispatchCluster(
-      `${name}-${target.provider}`,
-      config,
-      target,
-      network,
-      config.providerOptions
-    );
-  });
+  return Promise.all(
+    targets.map((target) => {
+      const network = findNetworkForProvider(networkArray, target);
+      return dispatchCluster(
+        `${name}-${target.provider}`,
+        config,
+        target,
+        network,
+        config.providerOptions
+      );
+    })
+  );
 }
 
-function dispatchCluster(
+async function dispatchCluster(
   name: string,
   config: IClusterConfig,
   target: ResolvedCloudTarget,
   network: INetwork,
   opts?: IProviderOptions
-): ICluster {
+): Promise<ICluster> {
   const targetConfig = { ...config, cloud: { provider: target.provider, region: target.region } };
 
   switch (target.provider) {
-    case "aws":
+    case "aws": {
+      const { createEksCluster } = await import("../aws/index.js");
       return createEksCluster(name, targetConfig, network, opts?.aws);
+    }
     case "azure": {
       const azureOpts = opts?.azure;
       if (!azureOpts) {
@@ -95,6 +97,7 @@ function dispatchCluster(
           "azure"
         );
       }
+      const { createAksCluster } = await import("../azure/index.js");
       return createAksCluster(name, targetConfig, network, {
         resourceGroupName: azureOpts.resourceGroupName,
         azureCni: azureOpts.azureCni,
