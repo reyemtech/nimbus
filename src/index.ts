@@ -103,3 +103,15 @@ export {
   createRoute53Dns,
   createAwsSecrets,
 } from "./aws";
+
+// Azure Provider
+export {
+  createAzureNetwork,
+  type IAzureNetworkOptions,
+  createAksCluster,
+  type IAksOptions,
+  createAzureDns,
+  type IAzureDnsOptions,
+  createAzureSecrets,
+  type IAzureSecretsOptions,
+} from "./azure";
