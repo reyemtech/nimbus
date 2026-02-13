@@ -63,7 +63,7 @@ export const PROJECT_TSCONFIG = JSON.stringify(
     compilerOptions: {
       strict: true,
       outDir: "bin",
-      target: "es2022",
+      target: "es2020",
       module: "commonjs",
       moduleResolution: "node",
       sourceMap: true,
