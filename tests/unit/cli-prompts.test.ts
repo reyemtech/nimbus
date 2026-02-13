@@ -1,18 +1,17 @@
 /**
  * Unit tests for CLI Azure prompt helpers and template generation with options.
  *
- * Tests requiresAzurePrompts, requiresTenantId, and verifies that Azure
+ * Tests requiresAzurePrompts and verifies that Azure
  * templates inject prompted values correctly.
  */
 
 import { describe, it, expect } from "vitest";
-import { requiresAzurePrompts, requiresTenantId } from "../../src/cli/azure-prompts.js";
+import { requiresAzurePrompts } from "../../src/cli/azure-prompts.js";
 import {
   minimalAzureTemplate,
   azureTemplate,
   multiCloudTemplate,
 } from "../../src/cli/templates-azure.js";
-import type { TemplateName } from "../../src/cli/templates.js";
 
 describe("requiresAzurePrompts", () => {
   it("returns true for minimal-azure", () => {
@@ -40,33 +39,11 @@ describe("requiresAzurePrompts", () => {
   });
 });
 
-describe("requiresTenantId", () => {
-  it("returns true for minimal-azure", () => {
-    expect(requiresTenantId("minimal-azure")).toBe(true);
-  });
-
-  it("returns true for azure", () => {
-    expect(requiresTenantId("azure")).toBe(true);
-  });
-
-  it("returns false for multi-cloud", () => {
-    expect(requiresTenantId("multi-cloud")).toBe(false);
-  });
-
-  it("returns false for non-Azure templates", () => {
-    const nonAzure: TemplateName[] = ["empty", "minimal-aws", "aws"];
-    for (const t of nonAzure) {
-      expect(requiresTenantId(t)).toBe(false);
-    }
-  });
-});
-
 describe("minimalAzureTemplate with options", () => {
   const options = {
     azure: {
       region: "eastus2",
       resourceGroupName: "rg-test-eastus2",
-      tenantId: "abc-123-def",
     },
   };
 
@@ -75,9 +52,9 @@ describe("minimalAzureTemplate with options", () => {
     expect(files.indexTs).toContain('"rg-test-eastus2"');
   });
 
-  it("injects the tenant ID from options", () => {
+  it("uses ensureResourceGroup for resource group declaration", () => {
     const files = minimalAzureTemplate("test-proj", options);
-    expect(files.indexTs).toContain('"abc-123-def"');
+    expect(files.indexTs).toContain("ensureResourceGroup");
   });
 
   it("does not contain hardcoded canadacentral in resource group", () => {
@@ -85,10 +62,15 @@ describe("minimalAzureTemplate with options", () => {
     expect(files.indexTs).not.toContain("rg-test-proj-canadacentral");
   });
 
+  it("does not contain tenantId in generated code", () => {
+    const files = minimalAzureTemplate("test-proj", options);
+    expect(files.indexTs).not.toContain("tenantId");
+  });
+
   it("falls back to defaults when no options provided", () => {
     const files = minimalAzureTemplate("myapp");
     expect(files.indexTs).toContain("rg-myapp-canadacentral");
-    expect(files.indexTs).toContain('"your-tenant-id"');
+    expect(files.indexTs).toContain("ensureResourceGroup");
   });
 });
 
@@ -97,7 +79,6 @@ describe("azureTemplate with options", () => {
     azure: {
       region: "westeurope",
       resourceGroupName: "rg-prod-westeurope",
-      tenantId: "tenant-xyz-789",
     },
   };
 
@@ -106,20 +87,20 @@ describe("azureTemplate with options", () => {
     expect(files.indexTs).toContain('"rg-prod-westeurope"');
   });
 
-  it("injects the tenant ID from options", () => {
+  it("uses ensureResourceGroup for resource group declaration", () => {
     const files = azureTemplate("prod", options);
-    expect(files.indexTs).toContain('"tenant-xyz-789"');
+    expect(files.indexTs).toContain("ensureResourceGroup");
   });
 
-  it("does not contain placeholder tenant ID", () => {
+  it("does not contain tenantId in generated code", () => {
     const files = azureTemplate("prod", options);
-    expect(files.indexTs).not.toContain("your-tenant-id");
+    expect(files.indexTs).not.toContain("tenantId");
   });
 
   it("falls back to defaults when no options provided", () => {
     const files = azureTemplate("myapp");
     expect(files.indexTs).toContain("rg-myapp-canadacentral");
-    expect(files.indexTs).toContain('"your-tenant-id"');
+    expect(files.indexTs).toContain("ensureResourceGroup");
   });
 });
 
@@ -128,13 +109,17 @@ describe("multiCloudTemplate with options", () => {
     azure: {
       region: "northeurope",
       resourceGroupName: "rg-global-northeurope",
-      tenantId: "",
     },
   };
 
   it("injects the resource group name from options", () => {
     const files = multiCloudTemplate("global", options);
     expect(files.indexTs).toContain('"rg-global-northeurope"');
+  });
+
+  it("uses ensureResourceGroup for resource group declaration", () => {
+    const files = multiCloudTemplate("global", options);
+    expect(files.indexTs).toContain("ensureResourceGroup");
   });
 
   it("injects the Azure region into cloud target array", () => {
@@ -158,7 +143,7 @@ describe("multiCloudTemplate with options", () => {
     expect(files.indexTs).toContain('region: "canadacentral"');
   });
 
-  it("does not include tenant ID in generated code", () => {
+  it("does not include tenantId in generated code", () => {
     const files = multiCloudTemplate("global", options);
     expect(files.indexTs).not.toContain("tenantId");
   });

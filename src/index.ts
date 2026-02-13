@@ -124,6 +124,9 @@ export {
   createGlobalLoadBalancer,
 } from "./global-lb";
 
+// Azure resource group helper
+export { ensureResourceGroup, type IResourceGroupOptions } from "./azure/resource-group";
+
 // Factory functions (primary API)
 export {
   createNetwork,

@@ -15,12 +15,15 @@ const KEY_VAULT_NAME_MAX_LENGTH = 24;
 /** Default soft-delete retention period in days for Key Vault. */
 const SOFT_DELETE_RETENTION_DAYS = 90;
 
+/** Well-known role definition ID for Key Vault Secrets Officer. */
+const KEY_VAULT_SECRETS_OFFICER_ROLE_ID = "b86a8fe4-44ce-4948-aee5-eccb2c155cd7";
+
 /** Azure-specific secrets options. */
 export interface IAzureSecretsOptions {
   /** Resource group name. Required for Azure. */
   readonly resourceGroupName: pulumi.Input<string>;
-  /** Azure AD tenant ID. Required for Key Vault access policies. */
-  readonly tenantId: pulumi.Input<string>;
+  /** Azure AD tenant ID. Auto-detected via `getClientConfigOutput()` when omitted. */
+  readonly tenantId?: pulumi.Input<string>;
   /** Object ID of the principal that should have access to secrets. */
   readonly objectId?: pulumi.Input<string>;
   /** Key Vault SKU. Default: "standard". */
@@ -30,6 +33,10 @@ export interface IAzureSecretsOptions {
 /**
  * Create an Azure Key Vault for secret management.
  *
+ * When `tenantId` is omitted, it is auto-detected from the current Azure
+ * identity via `getClientConfigOutput()`. A Key Vault Secrets Officer RBAC
+ * role assignment is automatically created for the deploying principal.
+ *
  * @example
  * ```typescript
  * const secrets = createAzureSecrets("prod", {
@@ -37,7 +44,6 @@ export interface IAzureSecretsOptions {
  *   backend: "azure-key-vault",
  * }, {
  *   resourceGroupName: "my-rg",
- *   tenantId: "00000000-0000-0000-0000-000000000000",
  * });
  *
  * secrets.putSecret("database", { host: "db.example.com", password: dbPassword });
@@ -55,13 +61,17 @@ export function createAzureSecrets(
   const tags = config.tags ?? {};
   const rgName = options.resourceGroupName;
 
+  // Auto-detect tenantId from current Azure identity when not provided
+  const clientConfig = azure.authorization.getClientConfigOutput();
+  const tenantId = options.tenantId ?? clientConfig.tenantId;
+
   // Key Vault names must be 3-24 chars, alphanumeric + hyphens
   const vaultName = name.replace(/[^a-zA-Z0-9-]/g, "-").substring(0, KEY_VAULT_NAME_MAX_LENGTH);
 
   const accessPolicies: azure.types.input.keyvault.AccessPolicyEntryArgs[] = [];
   if (options.objectId) {
     accessPolicies.push({
-      tenantId: options.tenantId,
+      tenantId,
       objectId: options.objectId,
       permissions: {
         secrets: ["Get", "List", "Set", "Delete"],
@@ -73,7 +83,7 @@ export function createAzureSecrets(
     vaultName,
     resourceGroupName: rgName,
     properties: {
-      tenantId: options.tenantId,
+      tenantId,
       sku: {
         family: "A",
         name:
@@ -87,6 +97,16 @@ export function createAzureSecrets(
       accessPolicies,
     },
     tags: { ...tags, Name: `${name}-kv` },
+  });
+
+  // Grant the deploying principal Key Vault Secrets Officer on this vault
+  new azure.authorization.RoleAssignment(`${name}-kv-secrets-officer`, {
+    principalId: clientConfig.objectId,
+    roleDefinitionId: clientConfig.subscriptionId.apply(
+      (sub) =>
+        `/subscriptions/${sub}/providers/Microsoft.Authorization/roleDefinitions/${KEY_VAULT_SECRETS_OFFICER_ROLE_ID}`
+    ),
+    scope: vault.id,
   });
 
   // Track created secrets for getSecretRef lookups

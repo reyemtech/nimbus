@@ -30,12 +30,6 @@ const PLACEHOLDER_PATTERNS: ReadonlyArray<{
   readonly expectedIn: ReadonlyArray<TemplateName>;
 }> = [
   {
-    pattern: "your-tenant-id",
-    label: "Azure tenant ID placeholder",
-    severity: "critical",
-    expectedIn: ["minimal-azure", "azure"],
-  },
-  {
     pattern: "example.com",
     label: "Placeholder domain name (includes db host substring)",
     severity: "critical",
@@ -124,7 +118,6 @@ describe("Azure placeholders are replaced when options are provided", () => {
     azure: {
       region: "westeurope",
       resourceGroupName: "rg-custom-westeurope",
-      tenantId: "real-tenant-id-12345",
     },
   };
 
@@ -132,11 +125,6 @@ describe("Azure placeholders are replaced when options are provided", () => {
 
   for (const template of azureTemplates) {
     describe(template, () => {
-      it("does not contain 'your-tenant-id' placeholder", () => {
-        const code = TEMPLATES[template].generate("proj", azureOptions).indexTs;
-        expect(code).not.toContain("your-tenant-id");
-      });
-
       it("does not contain default region in resource group name", () => {
         const code = TEMPLATES[template].generate("proj", azureOptions).indexTs;
         expect(code).not.toContain("rg-proj-canadacentral");
@@ -146,32 +134,23 @@ describe("Azure placeholders are replaced when options are provided", () => {
         const code = TEMPLATES[template].generate("proj", azureOptions).indexTs;
         expect(code).toContain("rg-custom-westeurope");
       });
+
+      it("uses ensureResourceGroup for resource group declaration", () => {
+        const code = TEMPLATES[template].generate("proj", azureOptions).indexTs;
+        expect(code).toContain("ensureResourceGroup");
+      });
+
+      it("does not contain tenantId in generated code", () => {
+        const code = TEMPLATES[template].generate("proj", azureOptions).indexTs;
+        expect(code).not.toContain("tenantId");
+      });
     });
   }
-
-  describe("minimal-azure", () => {
-    it("contains the prompted tenant ID in azureOptions", () => {
-      const code = TEMPLATES["minimal-azure"].generate("proj", azureOptions).indexTs;
-      expect(code).toContain("real-tenant-id-12345");
-    });
-  });
-
-  describe("azure", () => {
-    it("contains the prompted tenant ID in azureOptions", () => {
-      const code = TEMPLATES["azure"].generate("proj", azureOptions).indexTs;
-      expect(code).toContain("real-tenant-id-12345");
-    });
-  });
 
   describe("multi-cloud", () => {
     it("uses prompted region in Azure cloud target", () => {
       const code = TEMPLATES["multi-cloud"].generate("proj", azureOptions).indexTs;
       expect(code).toContain('{ provider: "azure", region: "westeurope" }');
-    });
-
-    it("does not contain tenantId (multi-cloud does not use createSecrets for Azure)", () => {
-      const code = TEMPLATES["multi-cloud"].generate("proj", azureOptions).indexTs;
-      expect(code).not.toContain("tenantId");
     });
   });
 });

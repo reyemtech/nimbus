@@ -145,7 +145,7 @@ async function newProject(args: string[]): Promise<void> {
   // Prompt for Azure options if this template needs them
   let templateOptions: ITemplateOptions | undefined;
   if (requiresAzurePrompts(template)) {
-    const azureOptions = await promptForAzureOptions(name, template);
+    const azureOptions = await promptForAzureOptions(name);
     templateOptions = { azure: azureOptions };
   }
 

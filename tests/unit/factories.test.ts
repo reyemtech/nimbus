@@ -387,7 +387,7 @@ describe("createSecrets factory", () => {
       cloud: "azure",
       backend: "azure-key-vault",
       providerOptions: {
-        azure: { resourceGroupName: "my-rg", tenantId: "tenant-123" },
+        azure: { resourceGroupName: "my-rg" },
       },
     });
 
@@ -395,14 +395,16 @@ describe("createSecrets factory", () => {
     expect(createAwsSecrets).not.toHaveBeenCalled();
   });
 
-  it("throws for Azure without tenantId", () => {
-    expect(() =>
-      createSecrets("prod", {
-        cloud: "azure",
-        backend: "azure-key-vault",
-        providerOptions: { azure: { resourceGroupName: "my-rg" } },
-      })
-    ).toThrow("Azure requires providerOptions.azure with resourceGroupName and tenantId");
+  it("dispatches to Azure Key Vault with optional tenantId", async () => {
+    await createSecrets("prod", {
+      cloud: "azure",
+      backend: "azure-key-vault",
+      providerOptions: {
+        azure: { resourceGroupName: "my-rg", tenantId: "tenant-123" },
+      },
+    });
+
+    expect(createAzureSecrets).toHaveBeenCalledTimes(1);
   });
 
   it("throws for Azure without providerOptions", () => {
@@ -411,14 +413,14 @@ describe("createSecrets factory", () => {
         cloud: "azure",
         backend: "azure-key-vault",
       })
-    ).toThrow("Azure requires providerOptions.azure with resourceGroupName and tenantId");
+    ).toThrow("Azure requires providerOptions.azure with resourceGroupName");
   });
 
   it("returns array for multi-cloud", async () => {
     const result = await createSecrets("prod", {
       cloud: ["aws", "azure"],
       providerOptions: {
-        azure: { resourceGroupName: "my-rg", tenantId: "tenant-123" },
+        azure: { resourceGroupName: "my-rg" },
       },
     });
 

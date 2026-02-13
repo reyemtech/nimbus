@@ -23,7 +23,6 @@ const DEFAULT_AZURE_REGION = "canadacentral";
 export function minimalAzureTemplate(name: string, options?: ITemplateOptions): ITemplateFiles {
   const region = options?.azure?.region ?? DEFAULT_AZURE_REGION;
   const resourceGroupName = options?.azure?.resourceGroupName ?? `rg-${name}-${region}`;
-  const tenantId = options?.azure?.tenantId ?? "your-tenant-id";
 
   const indexTs = `/**
  * ${name} — Minimal Azure infrastructure.
@@ -34,15 +33,17 @@ export function minimalAzureTemplate(name: string, options?: ITemplateOptions): 
  *   pulumi up
  */
 
-import { createStateBackend, createSecrets } from "@reyemtech/nimbus";
+import { createStateBackend, createSecrets, ensureResourceGroup } from "@reyemtech/nimbus";
 import type { IStateBackend, ISecrets } from "@reyemtech/nimbus";
 
-const resourceGroupName = "${resourceGroupName}";
+const tags = { environment: "production" };
+
+// Resource group is declared automatically — created if new, no-op if exists
+const resourceGroupName = ensureResourceGroup("${resourceGroupName}", { tags });
 
 const azureOptions = {
   azure: {
     resourceGroupName,
-    tenantId: "${tenantId}",
   },
 };
 
@@ -51,15 +52,15 @@ const backend = createStateBackend("${name}", {
   cloud: "azure",
   versioning: true,
   encryption: true,
-  tags: { environment: "production" },
+  tags,
   providerOptions: azureOptions,
 }) as IStateBackend;
 
-// 2. Secrets — Azure Key Vault
+// 2. Secrets — Azure Key Vault (tenant ID auto-detected)
 const secrets = createSecrets("${name}", {
   cloud: "azure",
   backend: "azure-key-vault",
-  tags: { environment: "production" },
+  tags,
   providerOptions: azureOptions,
 }) as ISecrets;
 
@@ -111,7 +112,6 @@ ${OPERATIONS_SECTION}
 export function azureTemplate(name: string, options?: ITemplateOptions): ITemplateFiles {
   const region = options?.azure?.region ?? DEFAULT_AZURE_REGION;
   const resourceGroupName = options?.azure?.resourceGroupName ?? `rg-${name}-${region}`;
-  const tenantId = options?.azure?.tenantId ?? "your-tenant-id";
 
   const indexTs = `/**
  * ${name} — Full Azure infrastructure stack.
@@ -128,15 +128,18 @@ import {
   createDns,
   createSecrets,
   createPlatformStack,
+  ensureResourceGroup,
 } from "@reyemtech/nimbus";
 import type { INetwork, ICluster, IDns, ISecrets } from "@reyemtech/nimbus";
 
-const resourceGroupName = "${resourceGroupName}";
+const tags = { environment: "production", client: "acme" };
+
+// Resource group is declared automatically — created if new, no-op if exists
+const resourceGroupName = ensureResourceGroup("${resourceGroupName}", { tags });
 
 const azureOptions = {
   azure: {
     resourceGroupName,
-    tenantId: "${tenantId}",
   },
 };
 
@@ -145,7 +148,7 @@ const network = createNetwork("${name}", {
   cloud: "azure",
   cidr: "10.1.0.0/16",
   natStrategy: "managed",
-  tags: { environment: "production", client: "acme" },
+  tags,
   providerOptions: azureOptions,
 }) as INetwork;
 
@@ -173,7 +176,7 @@ const cluster = createCluster(
       },
     ],
     virtualNodes: true,
-    tags: { environment: "production", client: "acme" },
+    tags,
     providerOptions: azureOptions,
   },
   network,
@@ -190,11 +193,11 @@ const dns = createDns("${name}", {
   providerOptions: azureOptions,
 }) as IDns;
 
-// 4. Secrets — Azure Key Vault
+// 4. Secrets — Azure Key Vault (tenant ID auto-detected)
 const secrets = createSecrets("${name}", {
   cloud: "azure",
   backend: "azure-key-vault",
-  tags: { environment: "production" },
+  tags,
   providerOptions: azureOptions,
 }) as ISecrets;
 
@@ -299,10 +302,12 @@ import {
   createDns,
   createPlatformStack,
   createGlobalLoadBalancer,
+  ensureResourceGroup,
 } from "@reyemtech/nimbus";
 import type { INetwork, ICluster, IDns } from "@reyemtech/nimbus";
 
-const resourceGroupName = "${resourceGroupName}";
+// Resource group is declared automatically — created if new, no-op if exists
+const resourceGroupName = ensureResourceGroup("${resourceGroupName}");
 
 // Shared provider options
 const providerOptions = {

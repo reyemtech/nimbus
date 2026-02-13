@@ -1,7 +1,7 @@
 /**
  * Azure-specific CLI prompt orchestration for `nimbus new`.
  *
- * Prompts users for Azure region, resource group name, and tenant ID
+ * Prompts users for Azure region and resource group name
  * when scaffolding Azure templates.
  *
  * @module cli/azure-prompts
@@ -14,14 +14,10 @@ import type { TemplateName } from "./templates.js";
 export interface IAzureTemplateOptions {
   readonly region: string;
   readonly resourceGroupName: string;
-  readonly tenantId: string;
 }
 
 /** Templates that require Azure configuration prompts. */
 const AZURE_TEMPLATES: ReadonlyArray<TemplateName> = ["minimal-azure", "azure", "multi-cloud"];
-
-/** Templates that use `createSecrets` with Azure Key Vault and require a tenant ID. */
-const TENANT_ID_TEMPLATES: ReadonlyArray<TemplateName> = ["minimal-azure", "azure"];
 
 /**
  * Check whether a template requires Azure prompts.
@@ -34,28 +30,14 @@ export function requiresAzurePrompts(template: TemplateName): boolean {
 }
 
 /**
- * Check whether a template requires a tenant ID for Azure Key Vault.
- *
- * @param template - Template name to check
- * @returns True if the template uses createSecrets with Azure Key Vault
- */
-export function requiresTenantId(template: TemplateName): boolean {
-  return TENANT_ID_TEMPLATES.includes(template);
-}
-
-/**
  * Prompt the user for Azure configuration values.
  *
- * Asks for region, resource group name, and (if needed) tenant ID.
+ * Asks for region and resource group name.
  *
  * @param projectName - Project name used for default resource group
- * @param template - Template name to determine which prompts to show
  * @returns Azure template options collected from the user
  */
-export async function promptForAzureOptions(
-  projectName: string,
-  template: TemplateName
-): Promise<IAzureTemplateOptions> {
+export async function promptForAzureOptions(projectName: string): Promise<IAzureTemplateOptions> {
   const rl = createPromptInterface();
 
   try {
@@ -69,14 +51,7 @@ export async function promptForAzureOptions(
       defaultValue: `rg-${projectName}-${region}`,
     });
 
-    let tenantId = "";
-    if (requiresTenantId(template)) {
-      tenantId = await askQuestion(rl, "Azure tenant ID", {
-        required: true,
-      });
-    }
-
-    return { region, resourceGroupName, tenantId };
+    return { region, resourceGroupName };
   } finally {
     rl.close();
   }

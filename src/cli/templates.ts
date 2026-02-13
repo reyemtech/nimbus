@@ -22,7 +22,6 @@ export interface ITemplateOptions {
   readonly azure?: {
     readonly region: string;
     readonly resourceGroupName: string;
-    readonly tenantId: string;
   };
 }
 

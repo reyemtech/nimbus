@@ -38,7 +38,7 @@ export type ICreateSecretsConfig = ISecretsConfig & {
  *   cloud: "azure",
  *   backend: "azure-key-vault",
  *   providerOptions: {
- *     azure: { resourceGroupName: "my-rg", tenantId: "..." },
+ *     azure: { resourceGroupName: "my-rg" },
  *   },
  * });
  * ```
@@ -69,9 +69,9 @@ function dispatchSecrets(
     }
     case "azure": {
       const azureOpts = opts?.azure;
-      if (!azureOpts?.tenantId) {
+      if (!azureOpts) {
         throw new UnsupportedFeatureError(
-          "Azure requires providerOptions.azure with resourceGroupName and tenantId",
+          "Azure requires providerOptions.azure with resourceGroupName",
           "azure"
         );
       }
