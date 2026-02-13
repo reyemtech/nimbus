@@ -11,6 +11,8 @@ import { resolveCloudTarget, UnsupportedFeatureError } from "../types";
 import type { ResolvedCloudTarget } from "../types";
 import type { IProviderOptions } from "./types";
 import { isMultiCloud } from "./types";
+import { createAwsStateBackend } from "../aws/index.js";
+import { createAzureStateBackend } from "../azure/index.js";
 
 /** Config for the createStateBackend factory. */
 export type ICreateStateBackendConfig = IStateBackendConfig & {
@@ -27,7 +29,7 @@ export type ICreateStateBackendConfig = IStateBackendConfig & {
  *
  * @example
  * ```typescript
- * const state = await createStateBackend("prod", {
+ * const state = createStateBackend("prod", {
  *   cloud: "aws",
  *   versioning: true,
  *   encryption: true,
@@ -35,34 +37,31 @@ export type ICreateStateBackendConfig = IStateBackendConfig & {
  * });
  * ```
  */
-export async function createStateBackend(
+export function createStateBackend(
   name: string,
   config: ICreateStateBackendConfig
-): Promise<IStateBackend | IStateBackend[]> {
+): IStateBackend | IStateBackend[] {
   if (!isMultiCloud(config.cloud)) {
     const target = resolveCloudTarget(config.cloud);
     return dispatchStateBackend(name, config, target, config.providerOptions);
   }
 
   const targets = resolveCloudTarget(config.cloud);
-  return Promise.all(
-    targets.map((target) =>
-      dispatchStateBackend(`${name}-${target.provider}`, config, target, config.providerOptions)
-    )
+  return targets.map((target) =>
+    dispatchStateBackend(`${name}-${target.provider}`, config, target, config.providerOptions)
   );
 }
 
-async function dispatchStateBackend(
+function dispatchStateBackend(
   name: string,
   config: IStateBackendConfig,
   target: ResolvedCloudTarget,
   opts?: IProviderOptions
-): Promise<IStateBackend> {
+): IStateBackend {
   const targetConfig = { ...config, cloud: { provider: target.provider, region: target.region } };
 
   switch (target.provider) {
     case "aws": {
-      const { createAwsStateBackend } = await import("../aws/index.js");
       return createAwsStateBackend(name, targetConfig, {
         kmsKeyArn: opts?.aws?.stateKmsKeyArn,
         forceDestroy: opts?.aws?.stateForceDestroy,
@@ -76,7 +75,6 @@ async function dispatchStateBackend(
           "azure"
         );
       }
-      const { createAzureStateBackend } = await import("../azure/index.js");
       return createAzureStateBackend(name, targetConfig, {
         resourceGroupName: azureOpts.resourceGroupName,
       });

@@ -160,14 +160,14 @@ export function emptyTemplate(name: string): ITemplateFiles {
 //   createPlatformStack,
 // } from "@reyemtech/nimbus";
 // import type { INetwork, ICluster, IDns, ISecrets, IStateBackend } from "@reyemtech/nimbus";
-
-// TODO: Define your cloud target
+//
+// // TODO: Define your cloud target
 // const cloud = "aws";
-
-// TODO: Create resources
-// const network = createNetwork("${name}", { cloud, cidr: "10.0.0.0/16" });
-
-// TODO: Export outputs
+//
+// // TODO: Create resources
+// const network = createNetwork("${name}", { cloud, cidr: "10.0.0.0/16" }) as INetwork;
+//
+// // Stack outputs
 // export const output = "replace-me";
 `;
 
@@ -229,7 +229,7 @@ secrets.putSecret("database", {
   password: "change-me-in-pulumi-config",
 });
 
-// Exports
+// Stack outputs
 export const backendUrl = backend.backendUrl;
 export const bucketName = backend.bucketName;
 `;
@@ -309,7 +309,7 @@ secrets.putSecret("database", {
   password: "change-me-in-pulumi-config",
 });
 
-// Exports
+// Stack outputs
 export const backendUrl = backend.backendUrl;
 export const storageAccountName = backend.storageAccountName;
 `;
@@ -433,7 +433,7 @@ const platform = createPlatformStack("${name}", {
   vault: { enabled: true, ingressHost: "vault.example.com" },
 });
 
-// Exports
+// Stack outputs
 export const vpcId = network.vpcId;
 export const clusterEndpoint = cluster.endpoint;
 export const zoneId = dns.zoneId;
@@ -600,7 +600,7 @@ const platform = createPlatformStack("${name}", {
   vault: { enabled: true, ingressHost: "vault.example.com" },
 });
 
-// Exports
+// Stack outputs
 export const vnetId = network.vpcId;
 export const clusterEndpoint = cluster.endpoint;
 export const zoneId = dns.zoneId;
@@ -758,7 +758,7 @@ const glb = createGlobalLoadBalancer("${name}", {
   dnsProvider: "route53",
 });
 
-// Exports
+// Stack outputs
 export const awsVpcId = networks[0]?.vpcId;
 export const azureVnetId = networks[1]?.vpcId;
 export const awsEndpoint = clusters[0]?.endpoint;

@@ -52,6 +52,10 @@ const DEFAULT_VERSIONS = {
  *   vault: { enabled: true, ingressHost: "vault.reyem.tech" },
  * });
  * ```
+ *
+ * @param name - Stack name prefix for all resources
+ * @param config - Platform stack configuration
+ * @returns Deployed platform stack(s)
  */
 export function createPlatformStack(
   name: string,

@@ -11,6 +11,8 @@ import { resolveCloudTarget, UnsupportedFeatureError } from "../types";
 import type { ResolvedCloudTarget } from "../types";
 import type { IProviderOptions } from "./types";
 import { isMultiCloud } from "./types";
+import { createAwsSecrets } from "../aws/index.js";
+import { createAzureSecrets } from "../azure/index.js";
 
 /** Config for the createSecrets factory. */
 export type ICreateSecretsConfig = ISecretsConfig & {
@@ -27,12 +29,12 @@ export type ICreateSecretsConfig = ISecretsConfig & {
  *
  * @example
  * ```typescript
- * const secrets = await createSecrets("prod", {
+ * const secrets = createSecrets("prod", {
  *   cloud: "aws",
  *   backend: "aws-secrets-manager",
  * });
  *
- * const secrets = await createSecrets("prod", {
+ * const secrets = createSecrets("prod", {
  *   cloud: "azure",
  *   backend: "azure-key-vault",
  *   providerOptions: {
@@ -41,34 +43,28 @@ export type ICreateSecretsConfig = ISecretsConfig & {
  * });
  * ```
  */
-export async function createSecrets(
-  name: string,
-  config: ICreateSecretsConfig
-): Promise<ISecrets | ISecrets[]> {
+export function createSecrets(name: string, config: ICreateSecretsConfig): ISecrets | ISecrets[] {
   if (!isMultiCloud(config.cloud)) {
     const target = resolveCloudTarget(config.cloud);
     return dispatchSecrets(name, config, target, config.providerOptions);
   }
 
   const targets = resolveCloudTarget(config.cloud);
-  return Promise.all(
-    targets.map((target) =>
-      dispatchSecrets(`${name}-${target.provider}`, config, target, config.providerOptions)
-    )
+  return targets.map((target) =>
+    dispatchSecrets(`${name}-${target.provider}`, config, target, config.providerOptions)
   );
 }
 
-async function dispatchSecrets(
+function dispatchSecrets(
   name: string,
   config: ISecretsConfig,
   target: ResolvedCloudTarget,
   opts?: IProviderOptions
-): Promise<ISecrets> {
+): ISecrets {
   const targetConfig = { ...config, cloud: { provider: target.provider, region: target.region } };
 
   switch (target.provider) {
     case "aws": {
-      const { createAwsSecrets } = await import("../aws/index.js");
       return createAwsSecrets(name, targetConfig);
     }
     case "azure": {
@@ -79,7 +75,6 @@ async function dispatchSecrets(
           "azure"
         );
       }
-      const { createAzureSecrets } = await import("../azure/index.js");
       return createAzureSecrets(name, targetConfig, {
         resourceGroupName: azureOpts.resourceGroupName,
         tenantId: azureOpts.tenantId,

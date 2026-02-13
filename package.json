@@ -91,17 +91,6 @@
     "@pulumi/azure-native": ">=2.0.0",
     "@pulumi/kubernetes": ">=4.0.0"
   },
-  "peerDependenciesMeta": {
-    "@pulumi/aws": {
-      "optional": true
-    },
-    "@pulumi/azure-native": {
-      "optional": true
-    },
-    "@pulumi/kubernetes": {
-      "optional": true
-    }
-  },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
     "@pulumi/aws": "^7.19.0",

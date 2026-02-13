@@ -11,6 +11,8 @@ import { resolveCloudTarget, UnsupportedFeatureError } from "../types";
 import type { ResolvedCloudTarget } from "../types";
 import type { IProviderOptions } from "./types";
 import { isMultiCloud } from "./types";
+import { createRoute53Dns } from "../aws/index.js";
+import { createAzureDns } from "../azure/index.js";
 
 /** Config for the createDns factory. */
 export type ICreateDnsConfig = IDnsConfig & {
@@ -27,37 +29,34 @@ export type ICreateDnsConfig = IDnsConfig & {
  *
  * @example
  * ```typescript
- * const dns = await createDns("prod", {
+ * const dns = createDns("prod", {
  *   cloud: "aws",
  *   zoneName: "example.com",
  * });
  * ```
  */
-export async function createDns(name: string, config: ICreateDnsConfig): Promise<IDns | IDns[]> {
+export function createDns(name: string, config: ICreateDnsConfig): IDns | IDns[] {
   if (!isMultiCloud(config.cloud)) {
     const target = resolveCloudTarget(config.cloud);
     return dispatchDns(name, config, target, config.providerOptions);
   }
 
   const targets = resolveCloudTarget(config.cloud);
-  return Promise.all(
-    targets.map((target) =>
-      dispatchDns(`${name}-${target.provider}`, config, target, config.providerOptions)
-    )
+  return targets.map((target) =>
+    dispatchDns(`${name}-${target.provider}`, config, target, config.providerOptions)
   );
 }
 
-async function dispatchDns(
+function dispatchDns(
   name: string,
   config: IDnsConfig,
   target: ResolvedCloudTarget,
   opts?: IProviderOptions
-): Promise<IDns> {
+): IDns {
   const targetConfig = { ...config, cloud: { provider: target.provider, region: target.region } };
 
   switch (target.provider) {
     case "aws": {
-      const { createRoute53Dns } = await import("../aws/index.js");
       return createRoute53Dns(name, targetConfig);
     }
     case "azure": {
@@ -68,7 +67,6 @@ async function dispatchDns(
           "azure"
         );
       }
-      const { createAzureDns } = await import("../azure/index.js");
       return createAzureDns(name, targetConfig, {
         resourceGroupName: azureOpts.resourceGroupName,
       });
