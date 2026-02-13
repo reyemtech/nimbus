@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/reyemtech/nimbus/compare/v1.2.0...v1.3.0) (2026-02-13)
+
+
+### Features
+
+* Add resource group abstraction, auto-detect tenantId, and Key Vault RBAC ([233bb67](https://github.com/reyemtech/nimbus/commit/233bb672b4ab3391b06efbf45f3b90e9c40f50e8))
+
 # [1.2.0](https://github.com/reyemtech/nimbus/compare/v1.1.2...v1.2.0) (2026-02-13)
 
 
