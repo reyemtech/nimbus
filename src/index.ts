@@ -34,6 +34,15 @@ export {
 
 export { type IRequiredTags, normalizeTags, isValidGcpLabel, mergeWithRequiredTags } from "./types";
 
+export {
+  type IValidationResult,
+  validateFeature,
+  isFeatureSupported,
+  validateMultiCloud,
+  validateResourceName,
+  assertValidMultiCloud,
+} from "./types";
+
 // Cluster
 export type {
   INodeTaint,
@@ -48,6 +57,16 @@ export type {
 
 // Network
 export type { NatStrategy, ISubnetConfig, INetworkConfig, INetwork } from "./network";
+
+export {
+  parseCidr,
+  formatIp,
+  cidrsOverlap,
+  detectOverlaps,
+  validateNoOverlaps,
+  autoOffsetCidrs,
+  buildCidrMap,
+} from "./network";
 
 // DNS
 export type { DnsRecordType, IDnsRecord, IDnsConfig, IDns } from "./dns";
@@ -86,13 +105,14 @@ export {
 } from "./platform";
 
 // Global Load Balancer
-export type {
-  RoutingStrategy,
-  GlbDnsProvider,
-  IHealthCheck,
-  IGlobalLoadBalancerConfig,
-  IClusterHealthStatus,
-  IGlobalLoadBalancer,
+export {
+  type RoutingStrategy,
+  type GlbDnsProvider,
+  type IHealthCheck,
+  type IGlobalLoadBalancerConfig,
+  type IClusterHealthStatus,
+  type IGlobalLoadBalancer,
+  createGlobalLoadBalancer,
 } from "./global-lb";
 
 // AWS Provider

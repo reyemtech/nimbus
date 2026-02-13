@@ -12,3 +12,5 @@ export type {
   IClusterHealthStatus,
   IGlobalLoadBalancer,
 } from "./interfaces";
+
+export { createGlobalLoadBalancer } from "./glb";

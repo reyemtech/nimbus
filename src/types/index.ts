@@ -28,3 +28,12 @@ export {
 } from "./errors";
 
 export { type IRequiredTags, normalizeTags, isValidGcpLabel, mergeWithRequiredTags } from "./tags";
+
+export {
+  type IValidationResult,
+  validateFeature,
+  isFeatureSupported,
+  validateMultiCloud,
+  validateResourceName,
+  assertValidMultiCloud,
+} from "./validation";
