@@ -20,22 +20,21 @@ Run a single test file: `npx vitest run tests/unit/factories.test.ts`
 
 ## Architecture
 
-This is a cloud-agnostic Pulumi infrastructure library. The primary API is **async factory functions** that dispatch to AWS/Azure implementations via dynamic imports.
+This is a cloud-agnostic Pulumi infrastructure library. The primary API is **synchronous factory functions** that dispatch to AWS/Azure implementations via static imports.
 
 ### Flow: User → Factory → Provider
 
 ```
 createNetwork("prod", { cloud: "aws", ... })
-  → factories/network.ts (async, resolves cloud target)
-    → await import("../aws/index.js")
-      → aws/network.ts (creates VPC, subnets, NAT)
-        → returns INetwork
+  → factories/network.ts (resolves cloud target)
+    → aws/network.ts (creates VPC, subnets, NAT)
+      → returns INetwork
 ```
 
 ### Key directories
 
-- **`src/factories/`** — Cloud-agnostic entry points. Each factory is async, uses `isMultiCloud()` to branch between single and array dispatch, and dynamically imports the provider module.
-- **`src/aws/`**, **`src/azure/`** — Provider implementations. Loaded dynamically at runtime so missing SDKs don't crash imports.
+- **`src/factories/`** — Cloud-agnostic entry points. Each factory uses `isMultiCloud()` to branch between single and array dispatch, and statically imports provider modules.
+- **`src/aws/`**, **`src/azure/`** — Provider implementations. All Pulumi SDK peer deps are required (npm 7+ auto-installs them).
 - **`src/types/`** — `CloudArg` resolution (`"aws"` | `{provider, region}` | array), error classes with codes, validation, tag normalization.
 - **`src/platform/`** — Helm-based components (Traefik, cert-manager, ArgoCD, etc.) deployed to any `ICluster`.
 
@@ -44,7 +43,7 @@ createNetwork("prod", { cloud: "aws", ... })
 All factories accept `CloudArg` which can be a single target or an array. When an array is passed:
 1. `isMultiCloud()` returns true
 2. `resolveCloudTarget()` returns `ResolvedCloudTarget[]`
-3. Factory runs `Promise.all()` over targets, prefixing names with provider (`prod-aws`, `prod-azure`)
+3. Factory maps over targets, prefixing names with provider (`prod-aws`, `prod-azure`)
 4. For networks, CIDRs are auto-offset (`10.0.0.0/16`, `10.1.0.0/16`, etc.)
 
 ### Provider options
@@ -57,7 +56,7 @@ Every resource output has: `name`, `cloud: ResolvedCloudTarget`, `nativeResource
 
 ## Conventions
 
-- Dynamic import paths must use `.js` extensions (`await import("../aws/index.js")`) for Node16 module resolution.
+- Import paths must use `.js` extensions (`import { ... } from "../aws/index.js"`) for Node16 module resolution.
 - Use `import type` for type-only imports (enforced by eslint).
 - Prefix interface names with `I` (INetwork, ICluster). Types use plain PascalCase. Constants use UPPER_SNAKE_CASE.
 - Errors extend `AnyCloudError` with a machine-readable `code` field.
@@ -67,7 +66,7 @@ Every resource output has: `name`, `cloud: ResolvedCloudTarget`, `nativeResource
 
 ## Testing
 
-Tests use vitest with `vi.mock()` to intercept dynamic imports of `../../src/aws` and `../../src/azure`. Factory tests verify dispatch logic, multi-cloud naming, CIDR offsets, and error paths without needing actual cloud SDKs.
+Tests use vitest with `vi.mock()` to intercept imports of `../../src/aws` and `../../src/azure`. Factory tests verify dispatch logic, multi-cloud naming, CIDR offsets, and error paths without needing actual cloud SDKs.
 
 Coverage excludes: index barrels, interface-only files, aws/azure implementations (integration-tested separately), cli.ts, platform stack.
 
