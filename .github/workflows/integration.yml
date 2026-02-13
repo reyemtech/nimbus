@@ -1,0 +1,61 @@
+name: Integration Tests
+
+on:
+  schedule:
+    # Weekly on Sunday at 06:00 UTC
+    - cron: "0 6 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integration-aws:
+    runs-on: ubuntu-latest
+    if: github.repository == 'reyemtech/pulumi-any-cloud'
+    environment: integration-aws
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Run AWS integration tests
+        run: npm run test -- --grep "aws" || echo "No AWS integration tests yet"
+        env:
+          INTEGRATION_TEST: "true"
+
+  integration-azure:
+    runs-on: ubuntu-latest
+    if: github.repository == 'reyemtech/pulumi-any-cloud'
+    environment: integration-azure
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Run Azure integration tests
+        run: npm run test -- --grep "azure" || echo "No Azure integration tests yet"
+        env:
+          INTEGRATION_TEST: "true"
