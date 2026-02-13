@@ -15,6 +15,7 @@ export default defineConfig({
         "src/global-lb/glb.ts",
         "src/platform/stack.ts",
         "src/cli.ts",
+        "src/cli/**",
       ],
       thresholds: {
         statements: 80,
