@@ -93,3 +93,13 @@ export type {
   IClusterHealthStatus,
   IGlobalLoadBalancer,
 } from "./global-lb";
+
+// AWS Provider
+export {
+  createAwsNetwork,
+  type IAwsNetworkOptions,
+  createEksCluster,
+  type IEksOptions,
+  createRoute53Dns,
+  createAwsSecrets,
+} from "./aws";
