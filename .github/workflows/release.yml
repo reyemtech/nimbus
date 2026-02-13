@@ -8,6 +8,7 @@ permissions:
   contents: write
   id-token: write
   packages: write
+  issues: write
 
 jobs:
   release:
@@ -26,8 +27,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          registry-url: https://npm.pkg.github.com
-          scope: "@reyemtech"
+          registry-url: https://registry.npmjs.org
 
       - run: npm ci
 
